@@ -154,6 +154,62 @@ export type Database = {
         }
         Relationships: []
       }
+      conversas: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome_grupo: string | null
+          tipo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome_grupo?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome_grupo?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      conversas_participantes: {
+        Row: {
+          conversa_id: string | null
+          id: string
+          joined_at: string | null
+          last_read_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversa_id?: string | null
+          id?: string
+          joined_at?: string | null
+          last_read_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversa_id?: string | null
+          id?: string
+          joined_at?: string | null
+          last_read_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversas_participantes_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       declaracoes_comparecimento: {
         Row: {
           beneficiaria_id: string
@@ -191,6 +247,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feed_posts: {
+        Row: {
+          anexo_url: string | null
+          ativo: boolean | null
+          author_id: string | null
+          conteudo: string
+          created_at: string | null
+          fixado: boolean | null
+          id: string
+          tipo: string | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          anexo_url?: string | null
+          ativo?: boolean | null
+          author_id?: string | null
+          conteudo: string
+          created_at?: string | null
+          fixado?: boolean | null
+          id?: string
+          tipo?: string | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          anexo_url?: string | null
+          ativo?: boolean | null
+          author_id?: string | null
+          conteudo?: string
+          created_at?: string | null
+          fixado?: boolean | null
+          id?: string
+          tipo?: string | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       fichas_evolucao: {
         Row: {
@@ -327,6 +422,185 @@ export type Database = {
           },
         ]
       }
+      mensagens: {
+        Row: {
+          arquivo_url: string | null
+          conteudo: string
+          conversa_id: string | null
+          created_at: string | null
+          editada: boolean | null
+          id: string
+          sender_id: string | null
+          tipo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          arquivo_url?: string | null
+          conteudo: string
+          conversa_id?: string | null
+          created_at?: string | null
+          editada?: boolean | null
+          id?: string
+          sender_id?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          arquivo_url?: string | null
+          conteudo?: string
+          conversa_id?: string | null
+          created_at?: string | null
+          editada?: boolean | null
+          id?: string
+          sender_id?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensagens_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notificacoes: {
+        Row: {
+          conteudo: string
+          created_at: string | null
+          data_leitura: string | null
+          id: string
+          lida: boolean | null
+          metadata: Json | null
+          tipo: string | null
+          titulo: string
+          url_acao: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string | null
+          data_leitura?: string | null
+          id?: string
+          lida?: boolean | null
+          metadata?: Json | null
+          tipo?: string | null
+          titulo: string
+          url_acao?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string | null
+          data_leitura?: string | null
+          id?: string
+          lida?: boolean | null
+          metadata?: Json | null
+          tipo?: string | null
+          titulo?: string
+          url_acao?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      oficinas: {
+        Row: {
+          ativa: boolean | null
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string
+          descricao: string | null
+          dias_semana: string[]
+          horario_fim: string
+          horario_inicio: string
+          id: string
+          instrutor: string
+          nome: string
+          updated_at: string | null
+          vagas_ocupadas: number | null
+          vagas_totais: number | null
+        }
+        Insert: {
+          ativa?: boolean | null
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          descricao?: string | null
+          dias_semana: string[]
+          horario_fim: string
+          horario_inicio: string
+          id?: string
+          instrutor: string
+          nome: string
+          updated_at?: string | null
+          vagas_ocupadas?: number | null
+          vagas_totais?: number | null
+        }
+        Update: {
+          ativa?: boolean | null
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          dias_semana?: string[]
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          instrutor?: string
+          nome?: string
+          updated_at?: string | null
+          vagas_ocupadas?: number | null
+          vagas_totais?: number | null
+        }
+        Relationships: []
+      }
+      oficinas_participantes: {
+        Row: {
+          beneficiaria_id: string | null
+          created_at: string | null
+          data_matricula: string | null
+          id: string
+          observacoes: string | null
+          oficina_id: string | null
+          status: string | null
+        }
+        Insert: {
+          beneficiaria_id?: string | null
+          created_at?: string | null
+          data_matricula?: string | null
+          id?: string
+          observacoes?: string | null
+          oficina_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          beneficiaria_id?: string | null
+          created_at?: string | null
+          data_matricula?: string | null
+          id?: string
+          observacoes?: string | null
+          oficina_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oficinas_participantes_beneficiaria_id_fkey"
+            columns: ["beneficiaria_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oficinas_participantes_oficina_id_fkey"
+            columns: ["oficina_id"]
+            isOneToOne: false
+            referencedRelation: "oficinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planos_acao: {
         Row: {
           acoes: string
@@ -367,6 +641,54 @@ export type Database = {
             columns: ["beneficiaria_id"]
             isOneToOne: false
             referencedRelation: "beneficiarias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presencas_oficinas: {
+        Row: {
+          beneficiaria_id: string | null
+          created_at: string | null
+          data_aula: string
+          id: string
+          observacoes: string | null
+          oficina_id: string | null
+          presente: boolean
+          registrado_por: string | null
+        }
+        Insert: {
+          beneficiaria_id?: string | null
+          created_at?: string | null
+          data_aula: string
+          id?: string
+          observacoes?: string | null
+          oficina_id?: string | null
+          presente?: boolean
+          registrado_por?: string | null
+        }
+        Update: {
+          beneficiaria_id?: string | null
+          created_at?: string | null
+          data_aula?: string
+          id?: string
+          observacoes?: string | null
+          oficina_id?: string | null
+          presente?: boolean
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presencas_oficinas_beneficiaria_id_fkey"
+            columns: ["beneficiaria_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presencas_oficinas_oficina_id_fkey"
+            columns: ["oficina_id"]
+            isOneToOne: false
+            referencedRelation: "oficinas"
             referencedColumns: ["id"]
           },
         ]
@@ -542,6 +864,33 @@ export type Database = {
           },
         ]
       }
+      user_permissions: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          module: Database["public"]["Enums"]["module_type"]
+          permission: Database["public"]["Enums"]["permission_type"]
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          module: Database["public"]["Enums"]["module_type"]
+          permission: Database["public"]["Enums"]["permission_type"]
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          module?: Database["public"]["Enums"]["module_type"]
+          permission?: Database["public"]["Enums"]["permission_type"]
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       usuarios: {
         Row: {
           data_atualizacao: string
@@ -631,6 +980,14 @@ export type Database = {
       }
     }
     Enums: {
+      module_type:
+        | "beneficiarias"
+        | "formularios"
+        | "oficinas"
+        | "relatorios"
+        | "usuarios"
+        | "sistema"
+      permission_type: "read" | "write" | "delete" | "admin"
       user_type: "admin" | "profissional"
     }
     CompositeTypes: {
@@ -759,6 +1116,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      module_type: [
+        "beneficiarias",
+        "formularios",
+        "oficinas",
+        "relatorios",
+        "usuarios",
+        "sistema",
+      ],
+      permission_type: ["read", "write", "delete", "admin"],
       user_type: ["admin", "profissional"],
     },
   },

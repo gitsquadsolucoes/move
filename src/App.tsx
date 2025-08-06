@@ -21,6 +21,9 @@ import TermoConsentimento from "./pages/formularios/TermoConsentimento";
 import MatriculaProjetos from "./pages/formularios/MatriculaProjetos";
 import DeclaracoesRecibos from "./pages/formularios/DeclaracoesRecibos";
 import Analytics from "./pages/Analytics";
+import Oficinas from "./pages/Oficinas";
+import Feed from "./pages/Feed";
+import Configuracoes from "./pages/Configuracoes";
 
 const queryClient = new QueryClient();
 
@@ -133,6 +136,27 @@ const App = () => (
               <ProtectedRoute>
                 <MainLayout>
                   <DeclaracoesRecibos />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/oficinas" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Oficinas />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/feed" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Feed />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/configuracoes" element={
+              <ProtectedRoute adminOnly>
+                <MainLayout>
+                  <Configuracoes />
                 </MainLayout>
               </ProtectedRoute>
             } />
