@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { BeneficiariaSelection } from '@/components/BeneficiariaSelection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -242,6 +243,16 @@ export default function RodaVida() {
           <p className="text-muted-foreground">Carregando roda da vida...</p>
         </div>
       </div>
+    );
+  }
+
+  // Se não há beneficiariaId, mostra interface de seleção
+  if (!beneficiariaId) {
+    return (
+      <BeneficiariaSelection 
+        title="Roda da Vida" 
+        description="Selecione uma beneficiária para preencher a roda da vida"
+      />
     );
   }
 

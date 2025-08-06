@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { BeneficiariaSelection } from '@/components/BeneficiariaSelection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -264,38 +265,10 @@ export default function DeclaracoesRecibos() {
   // Se não há beneficiariaId, mostra interface de seleção
   if (!beneficiariaId) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Declarações e Recibos</h1>
-            <p className="text-muted-foreground">
-              Selecione uma beneficiária para gerar documentos
-            </p>
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Selecionar Beneficiária</CardTitle>
-            <CardDescription>
-              Para criar declarações ou recibos, você precisa selecionar uma beneficiária específica
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Vá para a página de beneficiárias e selecione uma para acessar seus formulários.
-              </p>
-              <Button asChild>
-                <Link to="/beneficiarias">Ver Beneficiárias</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <BeneficiariaSelection 
+        title="Declarações e Recibos" 
+        description="Selecione uma beneficiária para gerar declarações e recibos"
+      />
     );
   }
 
