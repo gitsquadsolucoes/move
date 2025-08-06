@@ -1,75 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, X, Check, Calendar, Info, AlertTriangle, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useState, useEffect } from "react";
+import { Bell, X, Check, CheckCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface Notification {
   id: string;
   titulo: string;
   conteudo: string;
-  tipo: 'info' | 'aviso' | 'aniversario' | 'sistema' | 'urgente';
+  tipo: string;
   lida: boolean;
   created_at: string;
   url_acao?: string;
 }
 
-const NotificationCenter = () => {
-  const { user } = useAuth();
+export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const { profile } = useAuth();
+
+  useEffect(() => {
+    if (profile?.user_id) {
+      loadNotifications();
+      subscribeToNotifications();
+    }
+  }, [profile]);
 
   const loadNotifications = async () => {
-    if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from('notificacoes')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', profile?.user_id)
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) throw error;
 
-      setNotifications((data || []).map(n => ({
-        id: n.id,
-        titulo: n.titulo,
-        conteudo: n.conteudo,
-        tipo: n.tipo as 'info' | 'aviso' | 'aniversario' | 'sistema' | 'urgente',
-        lida: n.lida,
-        created_at: n.created_at,
-        url_acao: n.url_acao
-      })));
+      setNotifications(data || []);
       setUnreadCount(data?.filter(n => !n.lida).length || 0);
     } catch (error) {
       console.error('Erro ao carregar notificações:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadNotifications();
-
-    // Real-time updates
+  const subscribeToNotifications = () => {
     const channel = supabase
       .channel('notifications')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'notificacoes',
-          filter: `user_id=eq.${user?.id}`
+          filter: `user_id=eq.${profile?.user_id}`
         },
-        () => {
-          loadNotifications();
+        (payload) => {
+          setNotifications(prev => [payload.new as Notification, ...prev.slice(0, 19)]);
+          setUnreadCount(prev => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notificacoes',
+          filter: `user_id=eq.${profile?.user_id}`
+        },
+        (payload) => {
+          setNotifications(prev => 
+            prev.map(n => n.id === payload.new.id ? payload.new as Notification : n)
+          );
+          if (payload.new.lida && !payload.old.lida) {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
         }
       )
       .subscribe();
@@ -77,19 +91,21 @@ const NotificationCenter = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  };
 
   const markAsRead = async (notificationId: string) => {
     try {
       const { error } = await supabase
         .from('notificacoes')
-        .update({ lida: true, data_leitura: new Date().toISOString() })
+        .update({ 
+          lida: true,
+          data_leitura: new Date().toISOString()
+        })
         .eq('id', notificationId);
 
       if (error) throw error;
-      loadNotifications();
     } catch (error) {
-      console.error('Erro ao marcar como lida:', error);
+      console.error('Erro ao marcar notificação como lida:', error);
     }
   };
 
@@ -97,89 +113,115 @@ const NotificationCenter = () => {
     try {
       const { error } = await supabase
         .from('notificacoes')
-        .update({ lida: true, data_leitura: new Date().toISOString() })
-        .eq('user_id', user?.id)
+        .update({ 
+          lida: true,
+          data_leitura: new Date().toISOString()
+        })
+        .eq('user_id', profile?.user_id)
         .eq('lida', false);
 
       if (error) throw error;
-      loadNotifications();
+
+      setNotifications(prev => prev.map(n => ({ ...n, lida: true })));
+      setUnreadCount(0);
     } catch (error) {
-      console.error('Erro ao marcar todas como lidas:', error);
+      console.error('Erro ao marcar todas notificações como lidas:', error);
     }
   };
 
   const getNotificationIcon = (tipo: string) => {
     switch (tipo) {
-      case 'aniversario':
-        return <Calendar className="w-4 h-4 text-accent" />;
-      case 'urgente':
-        return <AlertTriangle className="w-4 h-4 text-destructive" />;
-      case 'aviso':
-        return <AlertTriangle className="w-4 h-4 text-warning" />;
-      case 'sistema':
-        return <Users className="w-4 h-4 text-primary" />;
+      case 'success':
+        return '✅';
+      case 'warning':
+        return '⚠️';
+      case 'error':
+        return '❌';
       default:
-        return <Info className="w-4 h-4 text-muted-foreground" />;
+        return '📢';
     }
+  };
+
+  const getTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m`;
+    }
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return `${diffInHours}h`;
+    }
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d`;
   };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="w-5 h-5" />
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
             >
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0" align="end">
+      <PopoverContent className="w-80 p-0" align="end">
         <Card className="border-0 shadow-none">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Notificações</CardTitle>
-              <div className="flex items-center space-x-2">
+              <CardTitle className="text-base">Notificações</CardTitle>
+              <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={markAllAsRead}
-                    className="text-xs"
+                    className="text-xs h-7"
                   >
-                    <Check className="w-3 h-3 mr-1" />
+                    <CheckCheck className="h-3 w-3 mr-1" />
                     Marcar todas
                   </Button>
                 )}
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
+                  className="h-7 w-7"
                   onClick={() => setOpen(false)}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-3 w-3" />
                 </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-96">
-              {notifications.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>Nenhuma notificação</p>
-                </div>
-              ) : (
+            {loading ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                Carregando notificações...
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                Nenhuma notificação encontrada
+              </div>
+            ) : (
+              <ScrollArea className="h-96">
                 <div className="space-y-1">
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-3 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
-                        !notification.lida ? 'bg-primary/5' : ''
-                      }`}
+                      className={cn(
+                        "p-3 border-b border-border hover:bg-muted/50 cursor-pointer transition-colors",
+                        !notification.lida && "bg-primary/5"
+                      )}
                       onClick={() => {
                         if (!notification.lida) {
                           markAsRead(notification.id);
@@ -189,40 +231,49 @@ const NotificationCenter = () => {
                         }
                       }}
                     >
-                      <div className="flex items-start space-x-3">
-                        <div className="mt-1">
-                          {getNotificationIcon(notification.tipo)}
-                        </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-lg">{getNotificationIcon(notification.tipo)}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-foreground truncate">
+                            <p className={cn(
+                              "text-sm font-medium",
+                              !notification.lida && "text-foreground"
+                            )}>
                               {notification.titulo}
                             </p>
-                            {!notification.lida && (
-                              <div className="w-2 h-2 bg-primary rounded-full ml-2 flex-shrink-0" />
-                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {getTimeAgo(notification.created_at)}
+                            </span>
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                             {notification.conteudo}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(new Date(notification.created_at), {
-                              addSuffix: true,
-                              locale: ptBR
-                            })}
-                          </p>
+                          {!notification.lida && (
+                            <div className="flex justify-end mt-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification.id);
+                                }}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Marcar como lida
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </ScrollArea>
+              </ScrollArea>
+            )}
           </CardContent>
         </Card>
       </PopoverContent>
     </Popover>
   );
-};
-
-export default NotificationCenter;
+}

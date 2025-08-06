@@ -14,7 +14,8 @@ import {
   FileCheck,
   Eye,
   Target,
-  GraduationCap
+  GraduationCap,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,16 @@ const menuItems = [
     href: "/beneficiarias/nova"
   },
   {
+    title: "Oficinas",
+    icon: GraduationCap,
+    href: "/oficinas"
+  },
+  {
+    title: "Feed",
+    icon: Heart,
+    href: "/feed"
+  },
+  {
     title: "Formulários",
     icon: FileText,
     children: [
@@ -54,6 +65,11 @@ const menuItems = [
     title: "Relatórios",
     icon: BarChart3,
     href: "/relatorios"
+  },
+  {
+    title: "Analytics",
+    icon: TrendingUp,
+    href: "/analytics"
   }
 ];
 
@@ -175,13 +191,19 @@ export default function Sidebar() {
 
           {/* Footer */}
           <div className="p-4 border-t border-sidebar-border">
-            <Button 
-              variant="ghost"
-              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            <NavLink
+              to="/configuracoes"
+              className={({ isActive }) => cn(
+                "flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                isActive 
+                  ? "bg-primary text-primary-foreground shadow-soft" 
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+              onClick={() => setIsOpen(false)}
             >
-              <Settings className="h-4 w-4 mr-2" />
+              <Settings className="h-4 w-4" />
               Configurações
-            </Button>
+            </NavLink>
           </div>
         </div>
       </aside>

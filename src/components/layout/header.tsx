@@ -1,4 +1,4 @@
-import { Bell, User, LogOut, Shield } from "lucide-react";
+import { User, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
 import {
@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
+import NotificationCenter from "@/components/NotificationCenter";
 
 export default function Header() {
   const { profile, signOut, isAdmin } = useAuth();
@@ -43,12 +44,7 @@ export default function Header() {
       
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-3 w-3 bg-accent-strong text-xs rounded-full flex items-center justify-center text-white">
-            2
-          </span>
-        </Button>
+        <NotificationCenter />
 
         {/* User menu */}
         <DropdownMenu>

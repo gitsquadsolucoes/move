@@ -24,6 +24,7 @@ import Analytics from "./pages/Analytics";
 import Oficinas from "./pages/Oficinas";
 import Feed from "./pages/Feed";
 import Configuracoes from "./pages/Configuracoes";
+import Relatorios from "./pages/Relatorios";
 
 const queryClient = new QueryClient();
 
@@ -157,6 +158,77 @@ const App = () => (
               <ProtectedRoute adminOnly>
                 <MainLayout>
                   <Configuracoes />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/relatorios" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Relatorios />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            {/* Formularios routes */}
+            <Route path="/formularios/declaracao" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <DeclaracoesRecibos />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/recibo" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <DeclaracoesRecibos />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/anamnese" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AnamneseSocial />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/evolucao" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <FichaEvolucao />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/termo" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <TermoConsentimento />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/visao" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <VisaoHolistica />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/roda-vida" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <RodaVida />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/plano" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <PlanoAcao />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/matricula" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <MatriculaProjetos />
                 </MainLayout>
               </ProtectedRoute>
             } />

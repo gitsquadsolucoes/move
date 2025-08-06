@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import Sidebar from "./sidebar";
 import Header from "./header";
+import MessagingSystem from "@/components/MessagingSystem";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -18,6 +19,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
           {children}
         </main>
       </div>
+      
+      <MessagingSystem />
     </div>
   );
 }

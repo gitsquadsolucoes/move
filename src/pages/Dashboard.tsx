@@ -6,50 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const recentActivities = [
-  {
-    id: 1,
-    type: "Novo cadastro",
-    description: "Maria Silva foi cadastrada no sistema",
-    time: "Há 2 horas",
-    icon: Users
-  },
-  {
-    id: 2,
-    type: "Formulário preenchido",
-    description: "Anamnese Social - Ana Santos",
-    time: "Há 4 horas", 
-    icon: FileText
-  },
-  {
-    id: 3,
-    type: "Atendimento",
-    description: "Declaração de comparecimento emitida",
-    time: "Há 6 horas",
-    icon: Calendar
-  }
-];
+// Dynamic activities will be loaded from database
 
-const upcomingTasks = [
-  {
-    id: 1,
-    title: "Revisão mensal - Programa Marias Empreendedoras",
-    due: "Amanhã",
-    priority: "Alta"
-  },
-  {
-    id: 2,
-    title: "Atualização de dados - 15 beneficiárias",
-    due: "Esta semana",
-    priority: "Média"
-  },
-  {
-    id: 3,
-    title: "Relatório de impacto social",
-    due: "Próxima semana",
-    priority: "Baixa"
-  }
-];
+// Dynamic tasks will be loaded from database
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -58,6 +17,8 @@ export default function Dashboard() {
     atendimentosMes: 0,
     engajamento: "0%"
   });
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [upcomingTasks, setUpcomingTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -100,11 +61,148 @@ export default function Dashboard() {
         atendimentosMes: atendimentosMes || 0,
         engajamento: totalBeneficiarias > 0 ? "94%" : "0%"
       });
+
+      // Load recent activities from database
+      await loadRecentActivities();
+      
+      // Load upcoming tasks (for now, use calculated tasks)
+      await loadUpcomingTasks();
+      
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadRecentActivities = async () => {
+    try {
+      // Get recent beneficiarias
+      const { data: recentBeneficiarias } = await supabase
+        .from('beneficiarias')
+        .select('nome_completo, data_criacao')
+        .order('data_criacao', { ascending: false })
+        .limit(2);
+
+      // Get recent forms
+      const { data: recentForms } = await supabase
+        .from('anamneses_social')
+        .select('beneficiaria_id, data_criacao, beneficiarias(nome_completo)')
+        .order('data_criacao', { ascending: false })
+        .limit(2);
+
+      // Get recent declarations
+      const { data: recentDeclarations } = await supabase
+        .from('declaracoes_comparecimento')
+        .select('beneficiaria_id, data_criacao, beneficiarias(nome_completo)')
+        .order('data_criacao', { ascending: false })
+        .limit(2);
+
+      const activities = [];
+
+      // Add recent beneficiarias
+      recentBeneficiarias?.forEach((beneficiaria, index) => {
+        activities.push({
+          id: `beneficiaria-${index}`,
+          type: "Novo cadastro",
+          description: `${beneficiaria.nome_completo} foi cadastrada no sistema`,
+          time: formatTimeAgo(beneficiaria.data_criacao),
+          icon: Users
+        });
+      });
+
+      // Add recent forms
+      recentForms?.forEach((form: any, index) => {
+        activities.push({
+          id: `form-${index}`,
+          type: "Formulário preenchido",
+          description: `Anamnese Social - ${form.beneficiarias?.nome_completo || 'Beneficiária'}`,
+          time: formatTimeAgo(form.data_criacao),
+          icon: FileText
+        });
+      });
+
+      // Add recent declarations
+      recentDeclarations?.forEach((declaration: any, index) => {
+        activities.push({
+          id: `declaration-${index}`,
+          type: "Atendimento",
+          description: `Declaração de comparecimento - ${declaration.beneficiarias?.nome_completo || 'Beneficiária'}`,
+          time: formatTimeAgo(declaration.data_criacao),
+          icon: Calendar
+        });
+      });
+
+      // Sort by most recent and take top 3
+      activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setRecentActivities(activities.slice(0, 3));
+      
+    } catch (error) {
+      console.error('Erro ao carregar atividades recentes:', error);
+      // Fallback to static data
+      setRecentActivities([
+        {
+          id: 1,
+          type: "Sistema",
+          description: "Dashboard carregado com sucesso",
+          time: "Agora",
+          icon: Users
+        }
+      ]);
+    }
+  };
+
+  const loadUpcomingTasks = async () => {
+    try {
+      // Get count of pending forms for tasks
+      const { count: pendingForms } = await supabase
+        .from('beneficiarias')
+        .select('*', { count: 'exact', head: true });
+
+      const tasks = [
+        {
+          id: 1,
+          title: "Revisão mensal - Dados das beneficiárias",
+          due: "Esta semana",
+          priority: "Alta"
+        },
+        {
+          id: 2,
+          title: `Atualização de dados - ${pendingForms || 0} beneficiárias`,
+          due: "Esta semana", 
+          priority: "Média"
+        },
+        {
+          id: 3,
+          title: "Relatório de impacto social",
+          due: "Próxima semana",
+          priority: "Baixa"
+        }
+      ];
+
+      setUpcomingTasks(tasks);
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error);
+      setUpcomingTasks([]);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `Há ${diffInMinutes} minuto${diffInMinutes !== 1 ? 's' : ''}`;
+    }
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return `Há ${diffInHours} hora${diffInHours !== 1 ? 's' : ''}`;
+    }
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `Há ${diffInDays} dia${diffInDays !== 1 ? 's' : ''}`;
   };
 
   return (
