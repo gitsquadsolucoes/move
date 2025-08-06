@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Filter, MoreHorizontal, Edit, Eye, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,65 +19,69 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data
-const beneficiarias = [
-  {
-    id: 1,
-    nome: "Maria Silva Santos",
-    cpf: "123.456.789-00",
-    idade: 28,
-    programa: "Marias Empreendedoras",
-    dataInicio: "2024-01-15",
-    status: "Ativa",
-    telefone: "(11) 98765-4321",
-    paedi: "ME-2024-001"
-  },
-  {
-    id: 2,
-    nome: "Ana Paula Oliveira",
-    cpf: "987.654.321-00", 
-    idade: 35,
-    programa: "Oficinas de Capacitação",
-    dataInicio: "2024-02-20",
-    status: "Ativa",
-    telefone: "(11) 95432-1098",
-    paedi: "OC-2024-002"
-  },
-  {
-    id: 3,
-    nome: "Joana Costa Lima",
-    cpf: "456.789.123-00",
-    idade: 42,
-    programa: "Apoio Psicossocial",
-    dataInicio: "2023-11-10",
-    status: "Ativa",
-    telefone: "(11) 91234-5678",
-    paedi: "AP-2023-015"
-  },
-  {
-    id: 4,
-    nome: "Fernanda Rodrigues",
-    cpf: "321.654.987-00",
-    idade: 31,
-    programa: "Marias Empreendedoras",
-    dataInicio: "2024-03-05",
-    status: "Aguardando",
-    telefone: "(11) 97654-3210",
-    paedi: "ME-2024-008"
-  }
-];
+interface Beneficiaria {
+  id: string;
+  nome_completo: string;
+  cpf: string;
+  idade: number | null;
+  programa_servico: string | null;
+  data_inicio_instituto: string | null;
+  contato1: string;
+  data_criacao: string;
+}
 
 export default function Beneficiarias() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Todas");
+  const [beneficiarias, setBeneficiarias] = useState<Beneficiaria[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    ativas: 0,
+    aguardando: 0,
+    inativas: 0
+  });
+
+  useEffect(() => {
+    loadBeneficiarias();
+  }, []);
+
+  const loadBeneficiarias = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('beneficiarias')
+        .select('*')
+        .order('data_criacao', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao carregar beneficiárias:', error);
+        return;
+      }
+
+      setBeneficiarias(data || []);
+      
+      // Calculate stats
+      const total = data?.length || 0;
+      setStats({
+        total,
+        ativas: total, // For now, consider all as active
+        aguardando: 0,
+        inativas: 0
+      });
+    } catch (error) {
+      console.error('Erro ao carregar beneficiárias:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredBeneficiarias = beneficiarias.filter(beneficiaria => {
-    const matchesSearch = beneficiaria.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         beneficiaria.cpf.includes(searchTerm) ||
-                         beneficiaria.paedi.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === "Todas" || beneficiaria.status === selectedStatus;
-    return matchesSearch && matchesStatus;
+    const matchesSearch = beneficiaria.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         beneficiaria.cpf.includes(searchTerm);
+    return matchesSearch;
   });
 
   const getStatusVariant = (status: string) => {
@@ -91,6 +95,21 @@ export default function Beneficiarias() {
 
   const getInitials = (nome: string) => {
     return nome.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+  };
+
+  const formatCpf = (cpf: string) => {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const generatePaedi = (beneficiaria: Beneficiaria) => {
+    const year = new Date(beneficiaria.data_criacao).getFullYear();
+    const sequence = beneficiaria.id.slice(-3).toUpperCase();
+    return `MM-${year}-${sequence}`;
   };
 
   return (
@@ -113,25 +132,25 @@ export default function Beneficiarias() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="shadow-soft">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-primary">247</div>
+            <div className="text-2xl font-bold text-primary">{loading ? "..." : stats.total}</div>
             <p className="text-sm text-muted-foreground">Total de Beneficiárias</p>
           </CardContent>
         </Card>
         <Card className="shadow-soft">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-success">189</div>
+            <div className="text-2xl font-bold text-success">{loading ? "..." : stats.ativas}</div>
             <p className="text-sm text-muted-foreground">Ativas</p>
           </CardContent>
         </Card>
         <Card className="shadow-soft">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-warning">34</div>
+            <div className="text-2xl font-bold text-warning">{loading ? "..." : stats.aguardando}</div>
             <p className="text-sm text-muted-foreground">Aguardando</p>
           </CardContent>
         </Card>
         <Card className="shadow-soft">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-muted-foreground">24</div>
+            <div className="text-2xl font-bold text-muted-foreground">{loading ? "..." : stats.inativas}</div>
             <p className="text-sm text-muted-foreground">Inativas</p>
           </CardContent>
         </Card>
@@ -175,66 +194,83 @@ export default function Beneficiarias() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredBeneficiarias.map((beneficiaria) => (
-                  <TableRow key={beneficiaria.id} className="hover:bg-muted/30">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(beneficiaria.nome)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-foreground">{beneficiaria.nome}</div>
-                          <div className="text-sm text-muted-foreground">{beneficiaria.telefone}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{beneficiaria.cpf}</TableCell>
-                    <TableCell className="font-mono text-sm font-medium text-primary">
-                      {beneficiaria.paedi}
-                    </TableCell>
-                    <TableCell>{beneficiaria.programa}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(beneficiaria.status)}>
-                        {beneficiaria.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(beneficiaria.dataInicio).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver Perfil
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <FileText className="mr-2 h-4 w-4" />
-                            PAEDI Completo
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <p className="text-muted-foreground">Carregando beneficiárias...</p>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : filteredBeneficiarias.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        {searchTerm ? 'Nenhuma beneficiária encontrada para sua busca.' : 'Nenhuma beneficiária cadastrada ainda.'}
+                      </p>
+                      {!searchTerm && (
+                        <Button className="mt-4">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Cadastrar primeira beneficiária
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredBeneficiarias.map((beneficiaria) => (
+                    <TableRow key={beneficiaria.id} className="hover:bg-muted/30">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {getInitials(beneficiaria.nome_completo)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium text-foreground">{beneficiaria.nome_completo}</div>
+                            <div className="text-sm text-muted-foreground">{beneficiaria.contato1}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{formatCpf(beneficiaria.cpf)}</TableCell>
+                      <TableCell className="font-mono text-sm font-medium text-primary">
+                        {generatePaedi(beneficiaria)}
+                      </TableCell>
+                      <TableCell>{beneficiaria.programa_servico || 'Não definido'}</TableCell>
+                      <TableCell>
+                        <Badge variant="default">
+                          Ativa
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(beneficiaria.data_inicio_instituto)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Ver Perfil
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <FileText className="mr-2 h-4 w-4" />
+                              PAEDI Completo
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
 
-          {filteredBeneficiarias.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Nenhuma beneficiária encontrada.</p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
