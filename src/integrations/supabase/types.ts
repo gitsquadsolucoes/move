@@ -604,36 +604,72 @@ export type Database = {
       planos_acao: {
         Row: {
           acoes: string
+          acoes_realizadas: string | null
           acompanhamento: string | null
+          areas_prioritarias: Json | null
+          assinatura_beneficiaria: boolean | null
+          assinatura_responsavel_tecnico: boolean | null
           beneficiaria_id: string
           data_criacao: string
+          data_plano: string | null
           id: string
+          objetivo_principal: string | null
           objetivos: string
+          outras_areas: string | null
           prazos: string | null
+          primeira_avaliacao_data: string | null
+          primeira_avaliacao_progresso: string | null
           responsaveis: string | null
           resultados_esperados: string | null
+          segunda_avaliacao_data: string | null
+          segunda_avaliacao_progresso: string | null
+          suporte_instituto: string | null
         }
         Insert: {
           acoes: string
+          acoes_realizadas?: string | null
           acompanhamento?: string | null
+          areas_prioritarias?: Json | null
+          assinatura_beneficiaria?: boolean | null
+          assinatura_responsavel_tecnico?: boolean | null
           beneficiaria_id: string
           data_criacao?: string
+          data_plano?: string | null
           id?: string
+          objetivo_principal?: string | null
           objetivos: string
+          outras_areas?: string | null
           prazos?: string | null
+          primeira_avaliacao_data?: string | null
+          primeira_avaliacao_progresso?: string | null
           responsaveis?: string | null
           resultados_esperados?: string | null
+          segunda_avaliacao_data?: string | null
+          segunda_avaliacao_progresso?: string | null
+          suporte_instituto?: string | null
         }
         Update: {
           acoes?: string
+          acoes_realizadas?: string | null
           acompanhamento?: string | null
+          areas_prioritarias?: Json | null
+          assinatura_beneficiaria?: boolean | null
+          assinatura_responsavel_tecnico?: boolean | null
           beneficiaria_id?: string
           data_criacao?: string
+          data_plano?: string | null
           id?: string
+          objetivo_principal?: string | null
           objetivos?: string
+          outras_areas?: string | null
           prazos?: string | null
+          primeira_avaliacao_data?: string | null
+          primeira_avaliacao_progresso?: string | null
           responsaveis?: string | null
           resultados_esperados?: string | null
+          segunda_avaliacao_data?: string | null
+          segunda_avaliacao_progresso?: string | null
+          suporte_instituto?: string | null
         }
         Relationships: [
           {

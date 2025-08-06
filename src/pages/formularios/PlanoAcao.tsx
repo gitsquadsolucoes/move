@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { BeneficiariaSelection } from '@/components/BeneficiariaSelection';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Target, Plus, Trash2, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar, FileText, Users, Heart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { BeneficiariaSelection } from '@/components/BeneficiariaSelection';
+import { DocumentDownloadButton } from '@/components/DocumentDownloadButton';
 
 interface Beneficiaria {
   id: string;
@@ -21,64 +20,63 @@ interface Beneficiaria {
 }
 
 interface PlanoAcao {
-  id: string;
-  objetivos: string;
-  acoes: string;
-  prazos: string;
-  responsaveis: string;
-  resultados_esperados: string;
-  acompanhamento: string;
-  data_criacao: string;
-}
-
-interface AcaoItem {
   id?: string;
-  objetivo: string;
-  acao: string;
-  prazo: string;
-  responsavel: string;
-  resultado_esperado: string;
-  status: 'a_fazer' | 'em_andamento' | 'concluido';
+  beneficiaria_id: string;
+  data_plano: string;
+  objetivo_principal: string;
+  areas_prioritarias: {
+    autoconhecimento: boolean;
+    qualificacao: boolean;
+    empreendedorismo: boolean;
+    apoio_social: boolean;
+    outras: boolean;
+  };
+  outras_areas: string;
+  acoes_realizadas: string;
+  suporte_instituto: string;
+  primeira_avaliacao_data?: string;
+  primeira_avaliacao_progresso?: string;
+  segunda_avaliacao_data?: string;
+  segunda_avaliacao_progresso?: string;
+  assinatura_beneficiaria: boolean;
+  assinatura_responsavel_tecnico: boolean;
+  data_criacao?: string;
 }
 
-export default function PlanoAcao() {
+const PlanoAcao: React.FC = () => {
   const { beneficiariaId } = useParams<{ beneficiariaId: string }>();
-  const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { toast } = useToast();
   
   const [beneficiaria, setBeneficiaria] = useState<Beneficiaria | null>(null);
-  const [existingPlano, setExistingPlano] = useState<PlanoAcao | null>(null);
+  const [plano, setPlano] = useState<PlanoAcao>({
+    beneficiaria_id: beneficiariaId || '',
+    data_plano: new Date().toISOString().split('T')[0],
+    objetivo_principal: '',
+    areas_prioritarias: {
+      autoconhecimento: false,
+      qualificacao: false,
+      empreendedorismo: false,
+      apoio_social: false,
+      outras: false,
+    },
+    outras_areas: '',
+    acoes_realizadas: '',
+    suporte_instituto: '',
+    primeira_avaliacao_data: '',
+    primeira_avaliacao_progresso: '',
+    segunda_avaliacao_data: '',
+    segunda_avaliacao_progresso: '',
+    assinatura_beneficiaria: false,
+    assinatura_responsavel_tecnico: false,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
-  // Form state
-  const [acoes, setAcoes] = useState<AcaoItem[]>([
-    {
-      objetivo: '',
-      acao: '',
-      prazo: '',
-      responsavel: '',
-      resultado_esperado: '',
-      status: 'a_fazer'
-    }
-  ]);
-  
-  const [acompanhamento, setAcompanhamento] = useState('');
-
-  const statusOptions = [
-    { value: 'a_fazer', label: 'A Fazer', icon: Clock, color: 'text-muted-foreground' },
-    { value: 'em_andamento', label: 'Em Andamento', icon: AlertCircle, color: 'text-warning' },
-    { value: 'concluido', label: 'Concluído', icon: CheckCircle, color: 'text-success' }
-  ];
 
   useEffect(() => {
     if (beneficiariaId) {
-      Promise.all([
-        loadBeneficiaria(),
-        loadPlanoAcao()
-      ]);
+      loadBeneficiaria();
+      loadPlanoAcao();
     } else {
       setLoading(false);
     }
@@ -88,15 +86,11 @@ export default function PlanoAcao() {
     try {
       const { data, error } = await supabase
         .from('beneficiarias')
-        .select('*')
+        .select('id, nome_completo, cpf, data_nascimento')
         .eq('id', beneficiariaId)
         .single();
 
-      if (error) {
-        setError('Beneficiária não encontrada');
-        return;
-      }
-
+      if (error) throw error;
       setBeneficiaria(data);
     } catch (error) {
       console.error('Erro ao carregar beneficiária:', error);
@@ -106,135 +100,129 @@ export default function PlanoAcao() {
 
   const loadPlanoAcao = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('planos_acao')
         .select('*')
         .eq('beneficiaria_id', beneficiariaId)
         .order('data_criacao', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao carregar plano de ação:', error);
-        return;
-      }
-
-      if (data) {
-        setExistingPlano(data);
-        setAcompanhamento(data.acompanhamento || '');
-        
-        // Parse existing actions if they exist
-        try {
-          if (data.objetivos || data.acoes) {
-            // Convert old format to new format
-            setAcoes([{
-              objetivo: data.objetivos || '',
-              acao: data.acoes || '',
-              prazo: data.prazos || '',
-              responsavel: data.responsaveis || '',
-              resultado_esperado: data.resultados_esperados || '',
-              status: 'a_fazer' as const
-            }]);
-          }
-        } catch (e) {
-          console.error('Erro ao parsear ações:', e);
-        }
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const planoExistente = data[0];
+        setPlano({
+          id: planoExistente.id,
+          beneficiaria_id: planoExistente.beneficiaria_id,
+          data_plano: planoExistente.data_plano || new Date().toISOString().split('T')[0],
+          objetivo_principal: planoExistente.objetivo_principal || '',
+          areas_prioritarias: (planoExistente.areas_prioritarias as any) || {
+            autoconhecimento: false,
+            qualificacao: false,
+            empreendedorismo: false,
+            apoio_social: false,
+            outras: false,
+          },
+          outras_areas: planoExistente.outras_areas || '',
+          acoes_realizadas: planoExistente.acoes_realizadas || '',
+          suporte_instituto: planoExistente.suporte_instituto || '',
+          primeira_avaliacao_data: planoExistente.primeira_avaliacao_data || '',
+          primeira_avaliacao_progresso: planoExistente.primeira_avaliacao_progresso || '',
+          segunda_avaliacao_data: planoExistente.segunda_avaliacao_data || '',
+          segunda_avaliacao_progresso: planoExistente.segunda_avaliacao_progresso || '',
+          assinatura_beneficiaria: planoExistente.assinatura_beneficiaria || false,
+          assinatura_responsavel_tecnico: planoExistente.assinatura_responsavel_tecnico || false,
+        });
       }
     } catch (error) {
       console.error('Erro ao carregar plano de ação:', error);
+      setError('Erro ao carregar plano de ação existente');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAcaoChange = (index: number, field: keyof AcaoItem, value: string) => {
-    setAcoes(prev => prev.map((acao, i) => 
-      i === index ? { ...acao, [field]: value } : acao
-    ));
+  const handleAreaChange = (area: keyof typeof plano.areas_prioritarias, checked: boolean) => {
+    setPlano(prev => ({
+      ...prev,
+      areas_prioritarias: {
+        ...prev.areas_prioritarias,
+        [area]: checked
+      }
+    }));
   };
 
-  const addAcao = () => {
-    setAcoes(prev => [...prev, {
-      objetivo: '',
-      acao: '',
-      prazo: '',
-      responsavel: '',
-      resultado_esperado: '',
-      status: 'a_fazer'
-    }]);
-  };
-
-  const removeAcao = (index: number) => {
-    if (acoes.length > 1) {
-      setAcoes(prev => prev.filter((_, i) => i !== index));
-    }
+  const handleInputChange = (field: keyof PlanoAcao, value: string | boolean) => {
+    setPlano(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!beneficiaria) return;
-
     setSaving(true);
     setError(null);
 
     try {
-      // For now, we'll store the first action's data in the original format
-      // In a production system, you might want to create a separate actions table
-      const primeiraAcao = acoes[0];
-      
       const planoData = {
-        beneficiaria_id: beneficiaria.id,
-        objetivos: primeiraAcao?.objetivo || '',
-        acoes: primeiraAcao?.acao || '',
-        prazos: primeiraAcao?.prazo || '',
-        responsaveis: primeiraAcao?.responsavel || '',
-        resultados_esperados: primeiraAcao?.resultado_esperado || '',
-        acompanhamento: acompanhamento
+        beneficiaria_id: beneficiariaId,
+        data_plano: plano.data_plano,
+        objetivo_principal: plano.objetivo_principal,
+        areas_prioritarias: plano.areas_prioritarias,
+        outras_areas: plano.outras_areas,
+        acoes_realizadas: plano.acoes_realizadas,
+        suporte_instituto: plano.suporte_instituto,
+        primeira_avaliacao_data: plano.primeira_avaliacao_data || null,
+        primeira_avaliacao_progresso: plano.primeira_avaliacao_progresso,
+        segunda_avaliacao_data: plano.segunda_avaliacao_data || null,
+        segunda_avaliacao_progresso: plano.segunda_avaliacao_progresso,
+        assinatura_beneficiaria: plano.assinatura_beneficiaria,
+        assinatura_responsavel_tecnico: plano.assinatura_responsavel_tecnico,
+        // Legacy fields for compatibility
+        objetivos: plano.objetivo_principal,
+        acoes: plano.acoes_realizadas,
+        acompanhamento: '',
       };
 
-      let result;
-      
-      if (existingPlano) {
-        // Update existing plan
-        result = await supabase
+      if (plano.id) {
+        const { error } = await supabase
           .from('planos_acao')
           .update(planoData)
-          .eq('id', existingPlano.id);
+          .eq('id', plano.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: "Plano de ação atualizado com sucesso!",
+        });
       } else {
-        // Create new plan
-        result = await supabase
+        const { error } = await supabase
           .from('planos_acao')
           .insert([planoData]);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: "Plano de ação criado com sucesso!",
+        });
       }
 
-      if (result.error) {
-        setError(`Erro ao salvar plano de ação: ${result.error.message}`);
-        return;
-      }
-
-      setSuccess(true);
-      setTimeout(() => {
-        navigate(`/beneficiarias/${beneficiaria.id}`);
-      }, 2000);
-
+      // Reload data to get the latest
+      await loadPlanoAcao();
     } catch (error) {
       console.error('Erro ao salvar plano de ação:', error);
-      setError('Erro interno. Tente novamente.');
+      setError('Erro ao salvar plano de ação');
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar plano de ação",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
-  };
-
-  const getStatusIcon = (status: string) => {
-    const statusOption = statusOptions.find(opt => opt.value === status);
-    return statusOption ? statusOption.icon : Clock;
-  };
-
-  const getStatusColor = (status: string) => {
-    const statusOption = statusOptions.find(opt => opt.value === status);
-    return statusOption ? statusOption.color : 'text-muted-foreground';
   };
 
   const formatCpf = (cpf: string) => {
@@ -247,307 +235,342 @@ export default function PlanoAcao() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando plano de ação...</p>
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="flex justify-center items-center py-8">
+            <div className="text-lg">Carregando...</div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Se não há beneficiariaId, mostra interface de seleção
   if (!beneficiariaId) {
-    return (
-      <BeneficiariaSelection 
-        title="Plano de Ação" 
-        description="Selecione uma beneficiária para criar o plano de ação"
-      />
-    );
+    return <BeneficiariaSelection title="Plano de Ação" description="Selecione uma beneficiária para criar o plano de ação" />;
   }
 
-  if (error || !beneficiaria) {
+  if (error && !beneficiaria) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/beneficiarias')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-3xl font-bold text-foreground">Plano de Ação</h1>
-        </div>
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="flex justify-center items-center py-8">
+            <div className="text-lg text-destructive">{error}</div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(`/beneficiarias/${beneficiaria.id}`)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground">Plano de Ação Personalizado</h1>
-          <p className="text-muted-foreground">
-            {beneficiaria.nome_completo} • CPF: {formatCpf(beneficiaria.cpf)}
-          </p>
-        </div>
-        {existingPlano && (
-          <Badge variant="secondary">
-            Última atualização: {formatDate(existingPlano.data_criacao)}
-          </Badge>
-        )}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-primary mb-2">Construindo Passos para</h1>
+        <h2 className="text-3xl font-bold text-primary mb-2">Minha Transformação</h2>
+        <h3 className="text-2xl font-bold text-secondary mb-4">PLANO DE AÇÃO</h3>
+        <p className="text-muted-foreground max-w-3xl mx-auto">
+          Avalie os passos essenciais para alcançar seus objetivos e promover equilíbrio em sua jornada.
+          Este plano de ação foi desenvolvido para apoiar sua jornada de autoconhecimento e
+          desenvolvimento pessoal. Com base na avaliação das áreas da sua vida, vamos juntos
+          identificar pontos de melhoria e traçar ações para promover mudanças positivas. O
+          instituto estará ao seu lado em cada etapa, oferecendo suporte e recursos.
+        </p>
       </div>
-
-      {/* Success Message */}
-      {success && (
-        <Alert className="border-success">
-          <AlertDescription className="text-success">
-            Plano de ação salvo com sucesso! Redirecionando...
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informações Básicas */}
-        <Card className="shadow-soft">
+      
+      {beneficiaria && (
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Informações da Beneficiária
+              <Users className="h-5 w-5" />
+              Dados da Beneficiária
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Nome Completo</Label>
-                <p className="font-semibold">{beneficiaria.nome_completo}</p>
+                <Label className="text-sm font-medium">Nome Completo</Label>
+                <p className="text-lg">{beneficiaria.nome_completo}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Data de Nascimento</Label>
-                <p>{formatDate(beneficiaria.data_nascimento)}</p>
+                <Label className="text-sm font-medium">CPF</Label>
+                <p className="text-lg">{formatCpf(beneficiaria.cpf)}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Data de Nascimento</Label>
+                <p className="text-lg">{formatDate(beneficiaria.data_nascimento)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Seção 1: Nome e Data */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Identificação do Plano
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="beneficiaria-nome">Nome da Beneficiária</Label>
+                <Input
+                  id="beneficiaria-nome"
+                  value={beneficiaria?.nome_completo || ''}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+              <div>
+                <Label htmlFor="data-plano">Data</Label>
+                <Input
+                  id="data-plano"
+                  type="date"
+                  value={plano.data_plano}
+                  onChange={(e) => handleInputChange('data_plano', e.target.value)}
+                  required
+                />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Objetivos e Ações */}
-        <Card className="shadow-soft">
+        {/* Seção 2: Objetivo Principal */}
+        <Card>
           <CardHeader>
-            <CardTitle>Objetivos e Ações</CardTitle>
-            <CardDescription>
-              Defina objetivos claros e as ações necessárias para alcançá-los
-            </CardDescription>
+            <CardTitle>1. Objetivo Principal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={plano.objetivo_principal}
+              onChange={(e) => handleInputChange('objetivo_principal', e.target.value)}
+              placeholder="Descreva o objetivo principal que deseja alcançar..."
+              className="min-h-[120px]"
+              required
+            />
+          </CardContent>
+        </Card>
+
+        {/* Seção 3: Áreas Prioritárias */}
+        <Card>
+          <CardHeader>
+            <CardTitle>2. Áreas Prioritárias</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="autoconhecimento"
+                  checked={plano.areas_prioritarias.autoconhecimento}
+                  onCheckedChange={(checked) => handleAreaChange('autoconhecimento', checked as boolean)}
+                />
+                <Label htmlFor="autoconhecimento">Autoconhecimento</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="qualificacao"
+                  checked={plano.areas_prioritarias.qualificacao}
+                  onCheckedChange={(checked) => handleAreaChange('qualificacao', checked as boolean)}
+                />
+                <Label htmlFor="qualificacao">Qualificação</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="empreendedorismo"
+                  checked={plano.areas_prioritarias.empreendedorismo}
+                  onCheckedChange={(checked) => handleAreaChange('empreendedorismo', checked as boolean)}
+                />
+                <Label htmlFor="empreendedorismo">Empreendedorismo</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="apoio_social"
+                  checked={plano.areas_prioritarias.apoio_social}
+                  onCheckedChange={(checked) => handleAreaChange('apoio_social', checked as boolean)}
+                />
+                <Label htmlFor="apoio_social">Apoio Social/Assistência</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="outras"
+                  checked={plano.areas_prioritarias.outras}
+                  onCheckedChange={(checked) => handleAreaChange('outras', checked as boolean)}
+                />
+                <Label htmlFor="outras">Outras:</Label>
+              </div>
+            </div>
+            
+            {plano.areas_prioritarias.outras && (
+              <div>
+                <Input
+                  value={plano.outras_areas}
+                  onChange={(e) => handleInputChange('outras_areas', e.target.value)}
+                  placeholder="Especifique outras áreas..."
+                  className="mt-2"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Seção 4: Ações a Serem Realizadas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>3. Ações a Serem Realizadas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={plano.acoes_realizadas}
+              onChange={(e) => handleInputChange('acoes_realizadas', e.target.value)}
+              placeholder="Descreva as ações específicas que serão realizadas para atingir o objetivo..."
+              className="min-h-[120px]"
+              required
+            />
+          </CardContent>
+        </Card>
+
+        {/* Seção 5: Suporte do Instituto */}
+        <Card>
+          <CardHeader>
+            <CardTitle>4. Suporte oferecido pelo instituto</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={plano.suporte_instituto}
+              onChange={(e) => handleInputChange('suporte_instituto', e.target.value)}
+              placeholder="Descreva o suporte que o instituto oferecerá para a realização do plano..."
+              className="min-h-[120px]"
+              required
+            />
+          </CardContent>
+        </Card>
+
+        {/* Seção 6: Avaliação e Reavaliação */}
+        <Card>
+          <CardHeader>
+            <CardTitle>5. Avaliação e Reavaliação (Semestral)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {acoes.map((acao, index) => (
-              <Card key={index} className="p-4 border-dashed border-2">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold">Ação {index + 1}</h4>
-                  <div className="flex items-center gap-2">
-                    {acoes.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeAcao(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+            <div>
+              <h4 className="font-semibold mb-3">Primeira Avaliação</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="primeira-data">Data da Primeira Avaliação</Label>
+                  <Input
+                    id="primeira-data"
+                    type="date"
+                    value={plano.primeira_avaliacao_data}
+                    onChange={(e) => handleInputChange('primeira_avaliacao_data', e.target.value)}
+                  />
                 </div>
-
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label>Objetivo</Label>
-                    <Textarea
-                      value={acao.objetivo}
-                      onChange={(e) => handleAcaoChange(index, 'objetivo', e.target.value)}
-                      placeholder="Descreva o objetivo a ser alcançado"
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Ação</Label>
-                    <Textarea
-                      value={acao.acao}
-                      onChange={(e) => handleAcaoChange(index, 'acao', e.target.value)}
-                      placeholder="Descreva as ações específicas a serem realizadas"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Prazo</Label>
-                      <Input
-                        type="date"
-                        value={acao.prazo}
-                        onChange={(e) => handleAcaoChange(index, 'prazo', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Responsável</Label>
-                      <Input
-                        value={acao.responsavel}
-                        onChange={(e) => handleAcaoChange(index, 'responsavel', e.target.value)}
-                        placeholder="Nome do responsável"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Resultado Esperado</Label>
-                      <Textarea
-                        value={acao.resultado_esperado}
-                        onChange={(e) => handleAcaoChange(index, 'resultado_esperado', e.target.value)}
-                        placeholder="Descreva o resultado esperado"
-                        rows={2}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select
-                        value={acao.status}
-                        onValueChange={(value) => handleAcaoChange(index, 'status', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusOptions.map((option) => {
-                            const Icon = option.icon;
-                            return (
-                              <SelectItem key={option.value} value={option.value}>
-                                <div className="flex items-center gap-2">
-                                  <Icon className={`h-4 w-4 ${option.color}`} />
-                                  {option.label}
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="primeira-progresso">Revisão do progresso nas áreas de:</Label>
+                  <Textarea
+                    id="primeira-progresso"
+                    value={plano.primeira_avaliacao_progresso}
+                    onChange={(e) => handleInputChange('primeira_avaliacao_progresso', e.target.value)}
+                    placeholder="Descreva o progresso observado..."
+                    className="mt-1"
+                  />
                 </div>
+              </div>
+            </div>
 
-                {/* Status Badge */}
-                <div className="mt-4 flex justify-end">
-                  <Badge variant="outline" className={getStatusColor(acao.status)}>
-                    {React.createElement(getStatusIcon(acao.status), { className: "h-3 w-3 mr-1" })}
-                    {statusOptions.find(opt => opt.value === acao.status)?.label}
-                  </Badge>
+            <div>
+              <h4 className="font-semibold mb-3">Segunda Avaliação</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="segunda-data">Data da Segunda Avaliação</Label>
+                  <Input
+                    id="segunda-data"
+                    type="date"
+                    value={plano.segunda_avaliacao_data}
+                    onChange={(e) => handleInputChange('segunda_avaliacao_data', e.target.value)}
+                  />
                 </div>
-              </Card>
-            ))}
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addAcao}
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Nova Ação
-            </Button>
+                <div className="md:col-span-2">
+                  <Label htmlFor="segunda-progresso">Revisão do progresso nas áreas de:</Label>
+                  <Textarea
+                    id="segunda-progresso"
+                    value={plano.segunda_avaliacao_progresso}
+                    onChange={(e) => handleInputChange('segunda_avaliacao_progresso', e.target.value)}
+                    placeholder="Descreva o progresso observado..."
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Acompanhamento */}
-        <Card className="shadow-soft">
+        {/* Seção 7: Assinaturas */}
+        <Card>
           <CardHeader>
-            <CardTitle>Acompanhamento</CardTitle>
-            <CardDescription>
-              Notas gerais sobre o acompanhamento do plano
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Assinaturas
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="acompanhamento">Observações de Acompanhamento</Label>
-              <Textarea
-                id="acompanhamento"
-                value={acompanhamento}
-                onChange={(e) => setAcompanhamento(e.target.value)}
-                placeholder="Registre observações sobre o progresso, dificuldades encontradas, ajustes necessários, etc."
-                rows={4}
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="assinatura-beneficiaria"
+                checked={plano.assinatura_beneficiaria}
+                onCheckedChange={(checked) => handleInputChange('assinatura_beneficiaria', checked as boolean)}
               />
+              <Label htmlFor="assinatura-beneficiaria">Assinatura da Beneficiária</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="assinatura-responsavel"
+                checked={plano.assinatura_responsavel_tecnico}
+                onCheckedChange={(checked) => handleInputChange('assinatura_responsavel_tecnico', checked as boolean)}
+              />
+              <Label htmlFor="assinatura-responsavel">Assinatura do Responsável Técnico</Label>
             </div>
           </CardContent>
         </Card>
 
-        {/* Resumo */}
-        <Card className="shadow-soft bg-muted/50">
-          <CardHeader>
-            <CardTitle>Resumo do Plano</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{acoes.length}</p>
-                <p className="text-sm text-muted-foreground">Ações Planejadas</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-success">
-                  {acoes.filter(acao => acao.status === 'concluido').length}
-                </p>
-                <p className="text-sm text-muted-foreground">Concluídas</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-warning">
-                  {acoes.filter(acao => acao.status === 'em_andamento').length}
-                </p>
-                <p className="text-sm text-muted-foreground">Em Andamento</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
+            <div className="text-destructive">{error}</div>
+          </div>
+        )}
 
-        {/* Submit Button */}
-        <div className="flex justify-end gap-4">
+        <div className="flex gap-4">
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate(`/beneficiarias/${beneficiaria.id}`)}
+            onClick={() => window.history.back()}
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                {existingPlano ? 'Atualizar' : 'Salvar'} Plano de Ação
-              </>
-            )}
+          <Button
+            type="submit"
+            disabled={saving}
+          >
+            {saving ? 'Salvando...' : plano.id ? 'Atualizar Plano' : 'Salvar Plano'}
           </Button>
+          {plano.id && beneficiaria && (
+            <DocumentDownloadButton
+              documentType="plano_acao"
+              beneficiariaId={beneficiaria.id}
+              beneficiariaNome={beneficiaria.nome_completo}
+              formId={plano.id}
+            />
+          )}
         </div>
       </form>
     </div>
   );
-}
+};
+
+export default PlanoAcao;

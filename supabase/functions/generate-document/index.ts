@@ -437,50 +437,182 @@ async function generatePlanoAcao(supabaseClient: any, beneficiaria: any, formId:
 
   const doc = new jsPDF();
   
-  doc.setFontSize(16);
+  // Header
+  doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('INSTITUTO MOVE MARIAS', 105, 20, { align: 'center' });
-  doc.setFontSize(14);
-  doc.text('PLANO DE AÇÃO', 105, 35, { align: 'center' });
+  doc.text('Construindo Passos para', 105, 20, { align: 'center' });
+  doc.text('Minha Transformação', 105, 30, { align: 'center' });
   
+  doc.setFontSize(16);
+  doc.text('PLANO DE AÇÃO', 105, 45, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  const subtitle = 'Avalie os passos essenciais para alcançar seus objetivos e promover equilíbrio em sua jornada.';
+  const subtitleLines = doc.splitTextToSize(subtitle, 170);
+  doc.text(subtitleLines, 105, 55, { align: 'center' });
+  
+  let yPosition = 70;
+  
+  // Beneficiary info and date
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Nome: ${beneficiaria.nome_completo}`, 20, 55);
+  doc.text(`Nome da Beneficiária: ${beneficiaria.nome_completo}`, 20, yPosition);
   
-  let yPosition = 75;
+  const dataPlano = plano.data_plano ? new Date(plano.data_plano).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+  doc.text(`Data: ${dataPlano}`, 20, yPosition + 10);
   
+  yPosition += 25;
+  
+  // 1. Objetivo Principal
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('Objetivos:', 20, yPosition);
-  yPosition += 10;
-  doc.setFont('helvetica', 'normal');
-  const objetivos = doc.splitTextToSize(plano.objetivos, 170);
-  doc.text(objetivos, 20, yPosition);
-  yPosition += objetivos.length * 5 + 15;
+  doc.text('1. Objetivo Principal:', 20, yPosition);
   
-  doc.setFont('helvetica', 'bold');
-  doc.text('Ações:', 20, yPosition);
-  yPosition += 10;
-  doc.setFont('helvetica', 'normal');
-  const acoes = doc.splitTextToSize(plano.acoes, 170);
-  doc.text(acoes, 20, yPosition);
-  yPosition += acoes.length * 5 + 15;
-  
-  if (plano.responsaveis) {
-    doc.setFont('helvetica', 'bold');
-    doc.text('Responsáveis:', 20, yPosition);
-    yPosition += 10;
+  if (plano.objetivo_principal) {
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
-    doc.text(plano.responsaveis, 20, yPosition);
+    const objetivoLines = doc.splitTextToSize(plano.objetivo_principal, 170);
+    doc.text(objetivoLines, 20, yPosition + 8);
+    yPosition += 8 + (objetivoLines.length * 5) + 10;
+  } else {
+    yPosition += 20;
+  }
+  
+  // 2. Áreas Prioritárias
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('2. Áreas Prioritárias:', 20, yPosition);
+  
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  yPosition += 10;
+  
+  const areas = plano.areas_prioritarias || {};
+  const areaLabels = {
+    autoconhecimento: 'Autoconhecimento',
+    qualificacao: 'Qualificação',
+    empreendedorismo: 'Empreendedorismo',
+    apoio_social: 'Apoio Social/Assistência'
+  };
+  
+  Object.entries(areaLabels).forEach(([key, label]) => {
+    const checked = areas[key] ? '☑' : '☐';
+    doc.text(`${checked} ${label}`, 25, yPosition);
+    yPosition += 6;
+  });
+  
+  if (areas.outras) {
+    const outrasText = plano.outras_areas ? `☑ Outras: ${plano.outras_areas}` : '☑ Outras:';
+    doc.text(outrasText, 25, yPosition);
+    yPosition += 6;
+  } else {
+    doc.text('☐ Outras:', 25, yPosition);
+    yPosition += 6;
+  }
+  
+  yPosition += 10;
+  
+  // 3. Ações a Serem Realizadas
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('3. Ações a Serem Realizadas:', 20, yPosition);
+  
+  if (plano.acoes_realizadas) {
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const acoesLines = doc.splitTextToSize(plano.acoes_realizadas, 170);
+    doc.text(acoesLines, 20, yPosition + 8);
+    yPosition += 8 + (acoesLines.length * 5) + 10;
+  } else {
+    yPosition += 20;
+  }
+  
+  // Check if we need a new page
+  if (yPosition > 240) {
+    doc.addPage();
+    yPosition = 20;
+  }
+  
+  // 4. Suporte oferecido pelo instituto
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('4. Suporte oferecido pelo instituto:', 20, yPosition);
+  
+  if (plano.suporte_instituto) {
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const suporteLines = doc.splitTextToSize(plano.suporte_instituto, 170);
+    doc.text(suporteLines, 20, yPosition + 8);
+    yPosition += 8 + (suporteLines.length * 5) + 15;
+  } else {
+    yPosition += 25;
+  }
+  
+  // 5. Avaliação e Reavaliação
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('5. Avaliação e Reavaliação (Semestral)', 20, yPosition);
+  yPosition += 15;
+  
+  // Primeira Avaliação
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  const primeiraData = plano.primeira_avaliacao_data ? 
+    new Date(plano.primeira_avaliacao_data).toLocaleDateString('pt-BR') : '___/___/___';
+  doc.text(`Primeira Avaliação: ${primeiraData}`, 20, yPosition);
+  yPosition += 8;
+  
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Revisão do progresso nas áreas de:', 20, yPosition);
+  yPosition += 6;
+  
+  if (plano.primeira_avaliacao_progresso) {
+    const primeiraProgressoLines = doc.splitTextToSize(plano.primeira_avaliacao_progresso, 170);
+    doc.text(primeiraProgressoLines, 20, yPosition);
+    yPosition += (primeiraProgressoLines.length * 5) + 10;
+  } else {
     yPosition += 15;
   }
   
-  if (plano.prazos) {
-    doc.setFont('helvetica', 'bold');
-    doc.text('Prazos:', 20, yPosition);
-    yPosition += 10;
-    doc.setFont('helvetica', 'normal');
-    doc.text(plano.prazos, 20, yPosition);
+  // Segunda Avaliação
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  const segundaData = plano.segunda_avaliacao_data ? 
+    new Date(plano.segunda_avaliacao_data).toLocaleDateString('pt-BR') : '___/___/___';
+  doc.text(`Segunda Avaliação: ${segundaData}`, 20, yPosition);
+  yPosition += 8;
+  
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Revisão do progresso nas áreas de:', 20, yPosition);
+  yPosition += 6;
+  
+  if (plano.segunda_avaliacao_progresso) {
+    const segundaProgressoLines = doc.splitTextToSize(plano.segunda_avaliacao_progresso, 170);
+    doc.text(segundaProgressoLines, 20, yPosition);
+    yPosition += (segundaProgressoLines.length * 5) + 15;
+  } else {
+    yPosition += 20;
   }
+  
+  // Assinaturas
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Assinaturas:', 20, yPosition);
+  yPosition += 15;
+  
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  const beneficiariaStatus = plano.assinatura_beneficiaria ? '[ASSINADO]' : '';
+  doc.text(`Beneficiária: ${beneficiariaStatus}`, 20, yPosition);
+  doc.text('_______________________________________', 20, yPosition + 5);
+  yPosition += 20;
+  
+  const responsavelStatus = plano.assinatura_responsavel_tecnico ? '[ASSINADO]' : '';
+  doc.text(`Responsável Técnico: ${responsavelStatus}`, 20, yPosition);
+  doc.text('_______________________________________', 20, yPosition + 5);
   
   return new Uint8Array(doc.output('arraybuffer'));
 }
