@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BeneficiariaSelection } from '@/components/BeneficiariaSelection';
+import { DocumentDownloadButton } from '@/components/DocumentDownloadButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Target, BarChart3, Loader2, CheckCircle, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Save, Target, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface Beneficiaria {
   id: string;
@@ -20,69 +22,98 @@ interface Beneficiaria {
 }
 
 interface RodaVida {
-  id: string;
+  id?: string;
+  beneficiaria_id: string;
   data_roda: string;
-  espiritualidade_score: number;
-  saude_score: number;
-  lazer_score: number;
-  equilibrio_emocional_score: number;
-  vida_social_score: number;
-  relacionamento_familiar_score: number;
-  recursos_financeiros_score: number;
-  amor_score: number;
-  contribuicao_social_score: number;
-  proposito_score: number;
-  data_criacao: string;
+  data_avaliacao?: string;
+  objetivo_principal?: string;
+  saude_score?: number;
+  observacoes_saude?: string;
+  amor_score?: number;
+  observacoes_amor?: string;
+  recursos_financeiros_score?: number;
+  observacoes_recursos_financeiros?: string;
+  relacionamento_familiar_score?: number;
+  observacoes_relacionamento_familiar?: string;
+  vida_social_score?: number;
+  observacoes_vida_social?: string;
+  contribuicao_social_score?: number;
+  observacoes_contribuicao_social?: string;
+  proposito_score?: number;
+  observacoes_proposito?: string;
+  equilibrio_emocional_score?: number;
+  observacoes_equilibrio_emocional?: string;
+  lazer_score?: number;
+  observacoes_lazer?: string;
+  espiritualidade_score?: number;
+  observacoes_espiritualidade?: string;
+  planos_melhoria?: string;
+  assinatura_beneficiaria?: boolean;
+  assinatura_profissional?: boolean;
+  responsavel_tecnico?: string;
+  data_criacao?: string;
 }
 
 const areas = [
-  { key: 'espiritualidade_score', label: 'Espiritualidade', color: 'hsl(var(--primary))' },
-  { key: 'saude_score', label: 'Saúde', color: 'hsl(var(--success))' },
-  { key: 'lazer_score', label: 'Lazer', color: 'hsl(var(--warning))' },
-  { key: 'equilibrio_emocional_score', label: 'Equilíbrio Emocional', color: 'hsl(var(--accent-strong))' },
-  { key: 'vida_social_score', label: 'Vida Social', color: 'hsl(var(--primary-hover))' },
-  { key: 'relacionamento_familiar_score', label: 'Relacionamento Familiar', color: 'hsl(var(--success-light))' },
-  { key: 'recursos_financeiros_score', label: 'Recursos Financeiros', color: 'hsl(var(--warning-light))' },
-  { key: 'amor_score', label: 'Amor', color: 'hsl(15, 85%, 60%)' },
-  { key: 'contribuicao_social_score', label: 'Contribuição Social', color: 'hsl(var(--accent))' },
-  { key: 'proposito_score', label: 'Propósito', color: 'hsl(var(--primary-light))' }
+  { key: 'saude', label: 'Saúde', color: 'hsl(var(--success))' },
+  { key: 'amor', label: 'Amor', color: 'hsl(15, 85%, 60%)' },
+  { key: 'recursos_financeiros', label: 'Recursos Financeiros', color: 'hsl(var(--warning))' },
+  { key: 'relacionamento_familiar', label: 'Relacionamento Familiar', color: 'hsl(var(--success-light))' },
+  { key: 'vida_social', label: 'Vida Social', color: 'hsl(var(--primary-hover))' },
+  { key: 'contribuicao_social', label: 'Contribuição Social', color: 'hsl(var(--accent))' },
+  { key: 'proposito', label: 'Propósito', color: 'hsl(var(--primary-light))' },
+  { key: 'equilibrio_emocional', label: 'Equilíbrio Emocional', color: 'hsl(var(--accent-strong))' },
+  { key: 'lazer', label: 'Lazer', color: 'hsl(var(--warning-light))' },
+  { key: 'espiritualidade', label: 'Espiritualidade', color: 'hsl(var(--primary))' }
 ];
 
 export default function RodaVida() {
   const { beneficiariaId } = useParams<{ beneficiariaId: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { toast } = useToast();
   
   const [beneficiaria, setBeneficiaria] = useState<Beneficiaria | null>(null);
   const [existingRoda, setExistingRoda] = useState<RodaVida | null>(null);
-  const [historico, setHistorico] = useState<RodaVida[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
+  const [rodaVida, setRodaVida] = useState<RodaVida>({
+    beneficiaria_id: beneficiariaId || '',
     data_roda: new Date().toISOString().split('T')[0],
-    espiritualidade_score: 5,
+    data_avaliacao: new Date().toISOString().split('T')[0],
+    objetivo_principal: '',
     saude_score: 5,
-    lazer_score: 5,
-    equilibrio_emocional_score: 5,
-    vida_social_score: 5,
-    relacionamento_familiar_score: 5,
-    recursos_financeiros_score: 5,
+    observacoes_saude: '',
     amor_score: 5,
+    observacoes_amor: '',
+    recursos_financeiros_score: 5,
+    observacoes_recursos_financeiros: '',
+    relacionamento_familiar_score: 5,
+    observacoes_relacionamento_familiar: '',
+    vida_social_score: 5,
+    observacoes_vida_social: '',
     contribuicao_social_score: 5,
-    proposito_score: 5
+    observacoes_contribuicao_social: '',
+    proposito_score: 5,
+    observacoes_proposito: '',
+    equilibrio_emocional_score: 5,
+    observacoes_equilibrio_emocional: '',
+    lazer_score: 5,
+    observacoes_lazer: '',
+    espiritualidade_score: 5,
+    observacoes_espiritualidade: '',
+    planos_melhoria: '',
+    assinatura_beneficiaria: false,
+    assinatura_profissional: false,
+    responsavel_tecnico: ''
   });
 
   useEffect(() => {
     if (beneficiariaId) {
-      Promise.all([
-        loadBeneficiaria(),
-        loadRodaVida(),
-        loadHistorico()
-      ]);
+      loadBeneficiaria();
+      loadRodaVida();
     }
   }, [beneficiariaId]);
 
@@ -113,7 +144,7 @@ export default function RodaVida() {
         .from('roda_vida')
         .select('*')
         .eq('beneficiaria_id', beneficiariaId)
-        .order('data_roda', { ascending: false })
+        .order('data_criacao', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -124,19 +155,10 @@ export default function RodaVida() {
 
       if (data) {
         setExistingRoda(data);
-        setFormData({
-          data_roda: data.data_roda,
-          espiritualidade_score: data.espiritualidade_score || 5,
-          saude_score: data.saude_score || 5,
-          lazer_score: data.lazer_score || 5,
-          equilibrio_emocional_score: data.equilibrio_emocional_score || 5,
-          vida_social_score: data.vida_social_score || 5,
-          relacionamento_familiar_score: data.relacionamento_familiar_score || 5,
-          recursos_financeiros_score: data.recursos_financeiros_score || 5,
-          amor_score: data.amor_score || 5,
-          contribuicao_social_score: data.contribuicao_social_score || 5,
-          proposito_score: data.proposito_score || 5
-        });
+        setRodaVida(prevState => ({
+          ...prevState,
+          ...data
+        }));
       }
     } catch (error) {
       console.error('Erro ao carregar roda da vida:', error);
@@ -145,29 +167,10 @@ export default function RodaVida() {
     }
   };
 
-  const loadHistorico = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('roda_vida')
-        .select('*')
-        .eq('beneficiaria_id', beneficiariaId)
-        .order('data_roda', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao carregar histórico:', error);
-        return;
-      }
-
-      setHistorico(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
-    }
-  };
-
-  const handleScoreChange = (area: string, value: number[]) => {
-    setFormData(prev => ({
+  const handleInputChange = (field: string, value: string | number | boolean) => {
+    setRodaVida(prev => ({
       ...prev,
-      [area]: value[0]
+      [field]: value
     }));
   };
 
@@ -181,26 +184,37 @@ export default function RodaVida() {
 
     try {
       const rodaData = {
-        beneficiaria_id: beneficiaria.id,
-        ...formData
+        ...rodaVida,
+        beneficiaria_id: beneficiaria.id
       };
 
-      // Sempre criar novo registro para manter histórico
-      const { error } = await supabase
-        .from('roda_vida')
-        .insert([rodaData]);
+      let result;
+      if (existingRoda) {
+        result = await supabase
+          .from('roda_vida')
+          .update(rodaData)
+          .eq('id', existingRoda.id);
+      } else {
+        result = await supabase
+          .from('roda_vida')
+          .insert([rodaData])
+          .select()
+          .single();
+        
+        if (result.data) {
+          setExistingRoda(result.data);
+        }
+      }
 
-      if (error) {
-        setError(`Erro ao salvar roda da vida: ${error.message}`);
+      if (result.error) {
+        setError(`Erro ao salvar roda da vida: ${result.error.message}`);
         return;
       }
 
-      setSuccess(true);
-      
-      // Recarregar dados
-      await Promise.all([loadRodaVida(), loadHistorico()]);
-      
-      setTimeout(() => setSuccess(false), 3000);
+      toast({
+        title: "Sucesso!",
+        description: existingRoda ? "Roda da Vida atualizada com sucesso!" : "Roda da Vida criada com sucesso!"
+      });
 
     } catch (error) {
       console.error('Erro ao salvar roda da vida:', error);
@@ -210,29 +224,17 @@ export default function RodaVida() {
     }
   };
 
-  const calculateMedia = () => {
-    const scores = areas.map(area => formData[area.key as keyof typeof formData] as number);
-    return (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(1);
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score <= 3) return 'text-destructive';
-    if (score <= 6) return 'text-warning';
-    return 'text-success';
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score <= 3) return 'Baixo';
-    if (score <= 6) return 'Médio';
-    return 'Alto';
-  };
-
-  const formatCpf = (cpf: string) => {
-    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  const calcularMedia = () => {
+    const scores = areas.map(area => rodaVida[`${area.key}_score` as keyof RodaVida] as number || 0);
+    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const formatCpf = (cpf: string) => {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   };
 
   if (loading) {
@@ -246,7 +248,6 @@ export default function RodaVida() {
     );
   }
 
-  // Se não há beneficiariaId, mostra interface de seleção
   if (!beneficiariaId) {
     return (
       <BeneficiariaSelection 
@@ -278,7 +279,6 @@ export default function RodaVida() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -288,225 +288,230 @@ export default function RodaVida() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground">Roda da Vida Individual</h1>
+          <h1 className="text-3xl font-bold text-foreground">Roda da Vida</h1>
           <p className="text-muted-foreground">
             {beneficiaria.nome_completo} • CPF: {formatCpf(beneficiaria.cpf)}
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          {historico.length > 0 && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-sm">{historico.length} avaliação{historico.length !== 1 ? 'ões' : ''} no histórico</span>
-            </div>
-          )}
-          <Badge variant="outline" className="text-lg px-3 py-1">
-            Média: {calculateMedia()}
-          </Badge>
-        </div>
+        {existingRoda && (
+          <DocumentDownloadButton
+            documentType="roda_vida"
+            beneficiariaId={beneficiaria.id}
+            beneficiariaNome={beneficiaria.nome_completo}
+            formId={existingRoda.id!}
+          />
+        )}
       </div>
 
-      {/* Success Message */}
-      {success && (
-        <Alert className="border-success">
-          <AlertDescription className="text-success">
-            Roda da vida salva com sucesso!
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Error Message */}
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Data da Avaliação */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Avaliação das Áreas de Vida
-            </CardTitle>
-            <CardDescription>
-              Avalie cada área de vida de 1 (muito insatisfeita) a 10 (muito satisfeita)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-6">
-              <Label htmlFor="data_roda">Data da Avaliação</Label>
-              <Input
-                id="data_roda"
-                type="date"
-                value={formData.data_roda}
-                onChange={(e) => setFormData(prev => ({ ...prev, data_roda: e.target.value }))}
-                required
-                className="w-fit"
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Roda da Vida - {beneficiaria?.nome_completo}
+            </h1>
+            <p className="text-gray-600">
+              Instrumento de Autoavaliação - Qualidade de Vida
+            </p>
+          </div>
+
+          {/* Seção 1: Identificação */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4 text-primary">1. Identificação</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome da Beneficiária
+                </label>
+                <input
+                  type="text"
+                  value={beneficiaria?.nome_completo || ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data da Avaliação
+                </label>
+                <input
+                  type="date"
+                  value={rodaVida.data_avaliacao || ''}
+                  onChange={(e) => handleInputChange('data_avaliacao', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Seção 2: Objetivo Principal */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4 text-primary">2. Objetivo Principal</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Qual o principal objetivo desta autoavaliação?
+              </label>
+              <Textarea
+                value={rodaVida.objetivo_principal || ''}
+                onChange={(e) => handleInputChange('objetivo_principal', e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Descreva o objetivo principal desta avaliação..."
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Áreas de Vida */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          {areas.map((area) => {
-            const score = formData[area.key as keyof typeof formData] as number;
-            return (
-              <Card key={area.key} className="shadow-soft">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{area.label}</h3>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="outline" 
-                          className={`${getScoreColor(score)} border-current`}
-                        >
-                          {score}/10
-                        </Badge>
-                        <span className={`text-sm font-medium ${getScoreColor(score)}`}>
-                          {getScoreLabel(score)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Slider
-                        value={[score]}
-                        onValueChange={(value) => handleScoreChange(area.key, value)}
-                        max={10}
-                        min={1}
-                        step={1}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>1 - Muito Insatisfeita</span>
-                        <span>10 - Muito Satisfeita</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Resumo Visual */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Resumo da Avaliação
-            </CardTitle>
-            <CardDescription>
-              Visão geral dos scores em todas as áreas
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-5">
-              {areas.map((area) => {
-                const score = formData[area.key as keyof typeof formData] as number;
-                return (
-                  <div key={area.key} className="text-center">
-                    <div className="relative w-16 h-16 mx-auto mb-2">
-                      <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="hsl(var(--border))"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke={area.color}
-                          strokeWidth="2"
-                          strokeDasharray={`${score * 10}, 100`}
-                          className="transition-all duration-300"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-sm font-bold">{score}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-tight">
-                      {area.label}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+          {/* Seção 3: Avaliação das Áreas de Vida */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4 text-primary">3. Avaliação das Áreas de Vida</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Avalie cada área da sua vida numa escala de 1 a 10, onde 1 = muito insatisfeito e 10 = muito satisfeito
+            </p>
             
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-              <div className="flex items-center justify-center gap-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{calculateMedia()}</p>
-                  <p className="text-sm text-muted-foreground">Média Geral</p>
+            <div className="space-y-8">
+              {areas.map((area) => (
+                <div key={area.key} className="border-l-4 pl-4" style={{ borderColor: area.color }}>
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900">{area.label}</h3>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`${area.key}_score`} className="text-sm">Pontuação:</Label>
+                        <Input
+                          id={`${area.key}_score`}
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={(rodaVida[`${area.key}_score` as keyof RodaVida] as number) || 5}
+                          onChange={(e) => handleInputChange(`${area.key}_score`, parseInt(e.target.value))}
+                          className="w-20 text-center"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Observações e Comentários sobre {area.label}
+                    </label>
+                    <Textarea
+                      value={rodaVida[`observacoes_${area.key}` as keyof RodaVida] as string || ''}
+                      onChange={(e) => handleInputChange(`observacoes_${area.key}`, e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder={`Comente sobre sua avaliação em ${area.label.toLowerCase()}...`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <h3 className="font-semibold text-blue-900 mb-2">Resumo da Avaliação</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <strong>Média Geral:</strong> {calcularMedia().toFixed(1)}
+                </div>
+                <div>
+                  <strong>Data:</strong> {formatDate(rodaVida.data_avaliacao || rodaVida.data_roda)}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Histórico */}
-        {historico.length > 0 && (
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle>Histórico de Avaliações</CardTitle>
-              <CardDescription>
-                Evolução ao longo do tempo
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {historico.slice(0, 5).map((roda, index) => {
-                  const media = areas.reduce((sum, area) => 
-                    sum + (roda[area.key as keyof RodaVida] as number || 0), 0
-                  ) / areas.length;
-                  
-                  return (
-                    <div key={roda.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div>
-                        <p className="font-medium">{formatDate(roda.data_roda)}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {index === 0 ? 'Mais recente' : `${index + 1}ª avaliação`}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="text-base">
-                        {media.toFixed(1)}
-                      </Badge>
-                    </div>
-                  );
-                })}
+          {/* Seção 4: Planos de Melhoria */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4 text-primary">4. Planos de Melhoria</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quais são os seus planos para melhorar as áreas com menor pontuação?
+              </label>
+              <Textarea
+                value={rodaVida.planos_melhoria || ''}
+                onChange={(e) => handleInputChange('planos_melhoria', e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Descreva seus planos e estratégias para melhorar as áreas identificadas..."
+              />
+            </div>
+          </div>
+
+          {/* Seção 5: Responsável Técnico */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4 text-primary">5. Responsável Técnico</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nome do Profissional Responsável
+              </label>
+              <Input
+                type="text"
+                value={rodaVida.responsavel_tecnico || ''}
+                onChange={(e) => handleInputChange('responsavel_tecnico', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Nome do profissional responsável"
+              />
+            </div>
+          </div>
+
+          {/* Seção 6: Assinaturas */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4 text-primary">6. Assinaturas</h2>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="assinatura_beneficiaria"
+                  checked={rodaVida.assinatura_beneficiaria || false}
+                  onChange={(e) => handleInputChange('assinatura_beneficiaria', e.target.checked)}
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <label htmlFor="assinatura_beneficiaria" className="text-sm text-gray-700">
+                  Confirmo que realizei esta autoavaliação de forma consciente e honesta (Assinatura da Beneficiária)
+                </label>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="assinatura_profissional"
+                  checked={rodaVida.assinatura_profissional || false}
+                  onChange={(e) => handleInputChange('assinatura_profissional', e.target.checked)}
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <label htmlFor="assinatura_profissional" className="text-sm text-gray-700">
+                  Acompanhei o processo de autoavaliação e valido os resultados (Assinatura do Profissional)
+                </label>
+              </div>
+            </div>
+          </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(`/beneficiarias/${beneficiaria.id}`)}
-          >
-            Voltar
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Avaliação
-              </>
-            )}
-          </Button>
+          {/* Botões de Ação */}
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(`/beneficiarias/${beneficiaria.id}`)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  {existingRoda ? 'Atualizar' : 'Salvar'}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

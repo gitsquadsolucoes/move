@@ -797,49 +797,97 @@ export type Database = {
       roda_vida: {
         Row: {
           amor_score: number | null
+          assinatura_beneficiaria: boolean | null
+          assinatura_profissional: boolean | null
           beneficiaria_id: string
           contribuicao_social_score: number | null
+          data_avaliacao: string | null
           data_criacao: string
           data_roda: string
           equilibrio_emocional_score: number | null
           espiritualidade_score: number | null
           id: string
           lazer_score: number | null
+          objetivo_principal: string | null
+          observacoes_amor: string | null
+          observacoes_contribuicao_social: string | null
+          observacoes_equilibrio_emocional: string | null
+          observacoes_espiritualidade: string | null
+          observacoes_lazer: string | null
+          observacoes_proposito: string | null
+          observacoes_recursos_financeiros: string | null
+          observacoes_relacionamento_familiar: string | null
+          observacoes_saude: string | null
+          observacoes_vida_social: string | null
+          planos_melhoria: string | null
           proposito_score: number | null
           recursos_financeiros_score: number | null
           relacionamento_familiar_score: number | null
+          responsavel_tecnico: string | null
           saude_score: number | null
           vida_social_score: number | null
         }
         Insert: {
           amor_score?: number | null
+          assinatura_beneficiaria?: boolean | null
+          assinatura_profissional?: boolean | null
           beneficiaria_id: string
           contribuicao_social_score?: number | null
+          data_avaliacao?: string | null
           data_criacao?: string
           data_roda: string
           equilibrio_emocional_score?: number | null
           espiritualidade_score?: number | null
           id?: string
           lazer_score?: number | null
+          objetivo_principal?: string | null
+          observacoes_amor?: string | null
+          observacoes_contribuicao_social?: string | null
+          observacoes_equilibrio_emocional?: string | null
+          observacoes_espiritualidade?: string | null
+          observacoes_lazer?: string | null
+          observacoes_proposito?: string | null
+          observacoes_recursos_financeiros?: string | null
+          observacoes_relacionamento_familiar?: string | null
+          observacoes_saude?: string | null
+          observacoes_vida_social?: string | null
+          planos_melhoria?: string | null
           proposito_score?: number | null
           recursos_financeiros_score?: number | null
           relacionamento_familiar_score?: number | null
+          responsavel_tecnico?: string | null
           saude_score?: number | null
           vida_social_score?: number | null
         }
         Update: {
           amor_score?: number | null
+          assinatura_beneficiaria?: boolean | null
+          assinatura_profissional?: boolean | null
           beneficiaria_id?: string
           contribuicao_social_score?: number | null
+          data_avaliacao?: string | null
           data_criacao?: string
           data_roda?: string
           equilibrio_emocional_score?: number | null
           espiritualidade_score?: number | null
           id?: string
           lazer_score?: number | null
+          objetivo_principal?: string | null
+          observacoes_amor?: string | null
+          observacoes_contribuicao_social?: string | null
+          observacoes_equilibrio_emocional?: string | null
+          observacoes_espiritualidade?: string | null
+          observacoes_lazer?: string | null
+          observacoes_proposito?: string | null
+          observacoes_recursos_financeiros?: string | null
+          observacoes_relacionamento_familiar?: string | null
+          observacoes_saude?: string | null
+          observacoes_vida_social?: string | null
+          planos_melhoria?: string | null
           proposito_score?: number | null
           recursos_financeiros_score?: number | null
           relacionamento_familiar_score?: number | null
+          responsavel_tecnico?: string | null
           saude_score?: number | null
           vida_social_score?: number | null
         }
