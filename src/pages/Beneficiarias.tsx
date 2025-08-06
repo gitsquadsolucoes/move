@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Plus, Filter, MoreHorizontal, Edit, Eye, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ interface Beneficiaria {
 }
 
 export default function Beneficiarias() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Todas");
   const [beneficiarias, setBeneficiarias] = useState<Beneficiaria[]>([]);
@@ -122,7 +124,7 @@ export default function Beneficiarias() {
             Gerencie o cadastro das beneficiárias do instituto
           </p>
         </div>
-        <Button className="w-fit" size="lg">
+        <Button className="w-fit" size="lg" onClick={() => navigate('/beneficiarias/nova')}>
           <Plus className="h-4 w-4 mr-2" />
           Nova Beneficiária
         </Button>
@@ -207,7 +209,7 @@ export default function Beneficiarias() {
                         {searchTerm ? 'Nenhuma beneficiária encontrada para sua busca.' : 'Nenhuma beneficiária cadastrada ainda.'}
                       </p>
                       {!searchTerm && (
-                        <Button className="mt-4">
+                        <Button className="mt-4" onClick={() => navigate('/beneficiarias/nova')}>
                           <Plus className="h-4 w-4 mr-2" />
                           Cadastrar primeira beneficiária
                         </Button>
@@ -249,9 +251,9 @@ export default function Beneficiarias() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/beneficiarias/${beneficiaria.id}`)}>
                               <Eye className="mr-2 h-4 w-4" />
-                              Ver Perfil
+                              Ver PAEDI
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                               <Edit className="mr-2 h-4 w-4" />
@@ -259,7 +261,7 @@ export default function Beneficiarias() {
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                               <FileText className="mr-2 h-4 w-4" />
-                              PAEDI Completo
+                              Gerar Documento
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

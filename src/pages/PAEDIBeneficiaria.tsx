@@ -1,0 +1,512 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  ArrowLeft, 
+  User, 
+  FileText, 
+  Activity, 
+  Eye, 
+  Target, 
+  GraduationCap,
+  Heart,
+  Calendar,
+  Plus,
+  Edit
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+interface Beneficiaria {
+  id: string;
+  nome_completo: string;
+  cpf: string;
+  rg?: string;
+  data_nascimento: string;
+  idade?: number;
+  endereco?: string;
+  bairro?: string;
+  nis?: string;
+  contato1: string;
+  contato2?: string;
+  referencia?: string;
+  data_inicio_instituto?: string;
+  programa_servico?: string;
+  data_criacao: string;
+}
+
+export default function PAEDIBeneficiaria() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [beneficiaria, setBeneficiaria] = useState<Beneficiaria | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      loadBeneficiaria();
+    }
+  }, [id]);
+
+  const loadBeneficiaria = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('beneficiarias')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        setError('Beneficiária não encontrada');
+        return;
+      }
+
+      setBeneficiaria(data);
+    } catch (error) {
+      console.error('Erro ao carregar beneficiária:', error);
+      setError('Erro ao carregar dados da beneficiária');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generatePAEDI = (beneficiaria: Beneficiaria) => {
+    const year = new Date(beneficiaria.data_criacao).getFullYear();
+    const sequence = beneficiaria.id.slice(-3).toUpperCase();
+    return `MM-${year}-${sequence}`;
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const formatCpf = (cpf: string) => {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
+  const calculateAge = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando PAEDI...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !beneficiaria) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/beneficiarias')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-3xl font-bold text-foreground">PAEDI</h1>
+        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/beneficiarias')}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold text-foreground">{beneficiaria.nome_completo}</h1>
+            <Badge variant="default" className="text-sm">
+              PAEDI: {generatePAEDI(beneficiaria)}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground">
+            Pasta de Atendimento e Desenvolvimento Individual
+          </p>
+        </div>
+        <Button onClick={() => navigate(`/beneficiarias/${id}/editar`)}>
+          <Edit className="h-4 w-4 mr-2" />
+          Editar Dados
+        </Button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary-light rounded-lg flex items-center justify-center">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Idade</p>
+                <p className="font-semibold">{calculateAge(beneficiaria.data_nascimento)} anos</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-success-light rounded-lg flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">No Instituto desde</p>
+                <p className="font-semibold">{formatDate(beneficiaria.data_inicio_instituto)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-warning-light rounded-lg flex items-center justify-center">
+                <GraduationCap className="h-5 w-5 text-warning" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Programa</p>
+                <p className="font-semibold text-sm">{beneficiaria.programa_servico || 'Não definido'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary-light rounded-lg flex items-center justify-center">
+                <Heart className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Status</p>
+                <Badge variant="default">Ativa</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content */}
+      <Tabs defaultValue="dados" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="dados">Dados Cadastrais</TabsTrigger>
+          <TabsTrigger value="formularios">Formulários</TabsTrigger>
+          <TabsTrigger value="evolucao">Evolução</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dados">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Dados Pessoais */}
+            <Card className="shadow-soft">
+              <CardHeader>
+                <CardTitle>Dados Pessoais</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Nome Completo</p>
+                    <p className="font-semibold">{beneficiaria.nome_completo}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">CPF</p>
+                      <p className="font-mono">{formatCpf(beneficiaria.cpf)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">RG</p>
+                      <p className="font-mono">{beneficiaria.rg || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Data de Nascimento</p>
+                      <p>{formatDate(beneficiaria.data_nascimento)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">NIS</p>
+                      <p className="font-mono">{beneficiaria.nis || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Contato e Endereço */}
+            <Card className="shadow-soft">
+              <CardHeader>
+                <CardTitle>Contato e Endereço</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Endereço</p>
+                    <p>{beneficiaria.endereco || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Bairro</p>
+                    <p>{beneficiaria.bairro || '-'}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Telefone Principal</p>
+                      <p className="font-mono">{beneficiaria.contato1}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Telefone Secundário</p>
+                      <p className="font-mono">{beneficiaria.contato2 || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="formularios">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* Anamnese Social */}
+            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Anamnese Social
+                </CardTitle>
+                <CardDescription>
+                  Avaliação socioeconômica e familiar
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">Não preenchida</Badge>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Preencher
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Roda da Vida */}
+            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-5 w-5 text-success" />
+                  Roda da Vida
+                </CardTitle>
+                <CardDescription>
+                  Avaliação holística das áreas de vida
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">Não preenchida</Badge>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Preencher
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Visão Holística */}
+            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-warning" />
+                  Visão Holística
+                </CardTitle>
+                <CardDescription>
+                  Análise qualitativa da beneficiária
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">Não preenchida</Badge>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Preencher
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Plano de Ação */}
+            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  Plano de Ação
+                </CardTitle>
+                <CardDescription>
+                  Objetivos e metas personalizadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">Não preenchida</Badge>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Preencher
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Termo de Consentimento */}
+            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-success" />
+                  Termo de Consentimento
+                </CardTitle>
+                <CardDescription>
+                  TCLE e autorização LGPD
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">Não preenchida</Badge>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Preencher
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Matrícula de Projetos */}
+            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-warning" />
+                  Matrícula de Projetos
+                </CardTitle>
+                <CardDescription>
+                  Inscrição em projetos sociais
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">Não preenchida</Badge>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Preencher
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="evolucao">
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Ficha de Evolução
+              </CardTitle>
+              <CardDescription>
+                Registro cronológico do acompanhamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  Nenhuma evolução registrada ainda
+                </p>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Registrar Evolução
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documentos">
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle>Documentos Gerados</CardTitle>
+              <CardDescription>
+                Declarações, recibos e relatórios
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  Nenhum documento gerado ainda
+                </p>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Gerar Documento
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="historico">
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle>Histórico de Atividades</CardTitle>
+              <CardDescription>
+                Timeline de todas as interações
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-3 border-l-2 border-primary">
+                  <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                  <div>
+                    <p className="font-medium">Beneficiária cadastrada no sistema</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(beneficiaria.data_criacao)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

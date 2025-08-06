@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Beneficiarias from "./pages/Beneficiarias";
+import CadastroBeneficiaria from "./pages/CadastroBeneficiaria";
+import PAEDIBeneficiaria from "./pages/PAEDIBeneficiaria";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/main-layout";
 import { AuthProvider } from "./hooks/useAuth";
@@ -38,6 +40,26 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Beneficiarias />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/beneficiarias/nova" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CadastroBeneficiaria />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/beneficiarias/:id" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PAEDIBeneficiaria />
                   </MainLayout>
                 </ProtectedRoute>
               } 

@@ -33,7 +33,7 @@ const menuItems = [
   {
     title: "Novo Cadastro",
     icon: UserPlus,
-    href: "/beneficiarias/novo"
+    href: "/beneficiarias/nova"
   },
   {
     title: "Formulários",
