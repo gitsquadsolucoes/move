@@ -20,13 +20,31 @@ interface Beneficiaria {
 }
 
 interface VisaoHolistica {
-  id: string;
+  id?: string;
   data_visao: string;
-  historia_vida: string;
-  rede_apoio: string;
-  visao_tecnica_referencia: string;
-  encaminhamento_projeto: string;
-  assinatura_tecnica: boolean;
+  objetivo_principal: string;
+  areas_prioritarias: {
+    autoconhecimento: boolean;
+    qualificacao: boolean;
+    empreendedorismo: boolean;
+    apoio_social: boolean;
+    outras: boolean;
+    outras_descricao: string;
+  };
+  acoes: string;
+  suporte_instituto: string;
+  primeira_avaliacao_data?: string;
+  primeira_avaliacao_progresso?: string;
+  segunda_avaliacao_data?: string;
+  segunda_avaliacao_progresso?: string;
+  assinatura_beneficiaria: boolean;
+  assinatura_responsavel_tecnico: boolean;
+  // Legacy fields for backward compatibility
+  historia_vida?: string;
+  rede_apoio?: string;
+  visao_tecnica_referencia?: string;
+  encaminhamento_projeto?: string;
+  assinatura_tecnica?: boolean;
 }
 
 export default function VisaoHolistica() {
@@ -42,13 +60,25 @@ export default function VisaoHolistica() {
   const [success, setSuccess] = useState(false);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<VisaoHolistica>({
     data_visao: new Date().toISOString().split('T')[0],
-    historia_vida: '',
-    rede_apoio: '',
-    visao_tecnica_referencia: '',
-    encaminhamento_projeto: '',
-    assinatura_tecnica: false
+    objetivo_principal: "",
+    areas_prioritarias: {
+      autoconhecimento: false,
+      qualificacao: false,
+      empreendedorismo: false,
+      apoio_social: false,
+      outras: false,
+      outras_descricao: "",
+    },
+    acoes: "",
+    suporte_instituto: "",
+    primeira_avaliacao_data: "",
+    primeira_avaliacao_progresso: "",
+    segunda_avaliacao_data: "",
+    segunda_avaliacao_progresso: "",
+    assinatura_beneficiaria: false,
+    assinatura_responsavel_tecnico: false,
   });
 
   useEffect(() => {
@@ -81,44 +111,74 @@ export default function VisaoHolistica() {
   };
 
   const loadVisaoHolistica = async () => {
+    if (!beneficiariaId) return;
+
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('visoes_holisticas')
-        .select('*')
-        .eq('beneficiaria_id', beneficiariaId)
-        .order('data_criacao', { ascending: false })
+        .from("visoes_holisticas")
+        .select("*")
+        .eq("beneficiaria_id", beneficiariaId)
+        .order("data_criacao", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao carregar visão holística:', error);
+      if (error && error.code !== "PGRST116") {
+        console.error("Erro ao carregar visão holística:", error);
+        setError("Erro ao carregar dados da visão holística");
         return;
       }
 
       if (data) {
-        setExistingVisao(data);
+        setExistingVisao(data as any);
+        // Handle both new format and legacy format
+        const areas = (data.areas_prioritarias as any) || {
+          autoconhecimento: false,
+          qualificacao: false,
+          empreendedorismo: false,
+          apoio_social: false,
+          outras: false,
+          outras_descricao: "",
+        };
+        
         setFormData({
-          data_visao: data.data_visao,
-          historia_vida: data.historia_vida || '',
-          rede_apoio: data.rede_apoio || '',
-          visao_tecnica_referencia: data.visao_tecnica_referencia || '',
-          encaminhamento_projeto: data.encaminhamento_projeto || '',
-          assinatura_tecnica: data.assinatura_tecnica
+          data_visao: data.data_visao || "",
+          objetivo_principal: data.objetivo_principal || "",
+          areas_prioritarias: areas,
+          acoes: data.acoes || "",
+          suporte_instituto: data.suporte_instituto || "",
+          primeira_avaliacao_data: data.primeira_avaliacao_data || "",
+          primeira_avaliacao_progresso: data.primeira_avaliacao_progresso || "",
+          segunda_avaliacao_data: data.segunda_avaliacao_data || "",
+          segunda_avaliacao_progresso: data.segunda_avaliacao_progresso || "",
+          assinatura_beneficiaria: Boolean(data.assinatura_beneficiaria),
+          assinatura_responsavel_tecnico: Boolean(data.assinatura_responsavel_tecnico),
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar visão holística:', error);
+      console.error("Erro ao carregar visão holística:", error);
+      setError("Erro ao carregar dados da visão holística");
     } finally {
       setLoading(false);
     }
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    if (field.startsWith('areas_prioritarias.')) {
+      const subField = field.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        areas_prioritarias: {
+          ...prev.areas_prioritarias,
+          [subField]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -237,7 +297,7 @@ export default function VisaoHolistica() {
         {existingVisao && (
           <div className="flex items-center gap-2 text-success">
             <CheckCircle className="h-4 w-4" />
-            <span className="text-sm">Última atualização: {formatDate(existingVisao.data_visao)}</span>
+            <span className="text-sm">Última atualização: {formatDate(existingVisao.data_visao || '')}</span>
           </div>
         )}
       </div>
@@ -258,195 +318,206 @@ export default function VisaoHolistica() {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informações Básicas */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Informações Básicas
-            </CardTitle>
-            <CardDescription>
-              Dados gerais da visão holística
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Nome da Beneficiária</Label>
-                <Input
-                  value={beneficiaria.nome_completo}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="data_visao">Data da Visão Holística</Label>
-                <Input
-                  id="data_visao"
-                  type="date"
-                  value={formData.data_visao}
-                  onChange={(e) => handleInputChange('data_visao', e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="bg-background p-8 rounded-lg shadow-sm max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-primary mb-2">
+            Construindo Passos para Minha Transformação
+          </h1>
+          <h2 className="text-xl font-semibold text-primary mb-2">VISÃO HOLÍSTICA</h2>
+          <p className="text-muted-foreground mb-2">
+            Avalie os passos essenciais para alcançar seus objetivos e promover equilíbrio em sua jornada.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Esta visão holística foi desenvolvida para apoiar sua jornada de autoconhecimento e desenvolvimento pessoal. 
+            Com base na avaliação das áreas da sua vida, vamos juntos identificar pontos de melhoria e traçar ações 
+            para promover mudanças positivas. O instituto estará ao seu lado em cada etapa, oferecendo suporte e recursos.
+          </p>
+        </div>
 
-        {/* História de Vida */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              História de Vida
-            </CardTitle>
-            <CardDescription>
-              Contexto histórico e trajetória de vida da beneficiária
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="historia_vida">
-                Descreva a história de vida da beneficiária
-              </Label>
-              <Textarea
-                id="historia_vida"
-                value={formData.historia_vida}
-                onChange={(e) => handleInputChange('historia_vida', e.target.value)}
-                placeholder="Inclua aspectos relevantes da trajetória de vida, experiências significativas, conquistas, desafios superados, etc."
-                rows={6}
-                className="min-h-[150px]"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+          <div>
+            <span className="font-medium">Nome da Beneficiária:</span> {beneficiaria?.nome_completo}
+          </div>
+          <div>
+            <span className="font-medium">Data:</span>
+            <Input
+              type="date"
+              value={formData.data_visao}
+              onChange={(e) => handleInputChange("data_visao", e.target.value)}
+              className="ml-2 w-auto inline-block"
+            />
+          </div>
+        </div>
 
-        {/* Rede de Apoio */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle>Rede de Apoio</CardTitle>
-            <CardDescription>
-              Identificação e mapeamento da rede de apoio social e familiar
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="rede_apoio">
-                Descreva a rede de apoio da beneficiária
-              </Label>
-              <Textarea
-                id="rede_apoio"
-                value={formData.rede_apoio}
-                onChange={(e) => handleInputChange('rede_apoio', e.target.value)}
-                placeholder="Inclua familiares, amigos, instituições, serviços públicos, organizações religiosas, vizinhos, colegas de trabalho, etc."
-                rows={6}
-                className="min-h-[150px]"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* 1. Objetivo Principal */}
+          <div className="space-y-3">
+            <Label className="text-lg font-semibold">1. Objetivo Principal:</Label>
+            <Textarea
+              placeholder="Descreva o objetivo principal da beneficiária..."
+              value={formData.objetivo_principal}
+              onChange={(e) => handleInputChange("objetivo_principal", e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
 
-        {/* Visão da Técnica de Referência */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle>Visão da Técnica de Referência</CardTitle>
-            <CardDescription>
-              Análise profissional e percepções da equipe técnica
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="visao_tecnica_referencia">
-                Visão holística da técnica de referência
-              </Label>
-              <Textarea
-                id="visao_tecnica_referencia"
-                value={formData.visao_tecnica_referencia}
-                onChange={(e) => handleInputChange('visao_tecnica_referencia', e.target.value)}
-                placeholder="Inclua análise profissional sobre potencialidades, fragilidades, recursos, necessidades, prognóstico, etc."
-                rows={6}
-                className="min-h-[150px]"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Encaminhamento para Projeto */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle>Encaminhamento para Projeto</CardTitle>
-            <CardDescription>
-              Recomendações de projetos e atividades adequadas ao perfil da beneficiária
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="encaminhamento_projeto">
-                Encaminhamento recomendado
-              </Label>
-              <Textarea
-                id="encaminhamento_projeto"
-                value={formData.encaminhamento_projeto}
-                onChange={(e) => handleInputChange('encaminhamento_projeto', e.target.value)}
-                placeholder="Especifique projetos, oficinas, cursos ou atividades recomendadas com base na análise holística realizada."
-                rows={4}
-                className="min-h-[120px]"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Assinatura */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle>Confirmação</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          {/* 2. Áreas Prioritárias */}
+          <div className="space-y-3">
+            <Label className="text-lg font-semibold">2. Áreas Prioritárias:</Label>
+            <div className="space-y-2 pl-4">
+              {[
+                { key: "autoconhecimento", label: "Autoconhecimento" },
+                { key: "qualificacao", label: "Qualificação" },
+                { key: "empreendedorismo", label: "Empreendedorismo" },
+                { key: "apoio_social", label: "Apoio Social/Assistência" },
+              ].map((area) => (
+                <div key={area.key} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={area.key}
+                    checked={Boolean(formData.areas_prioritarias[area.key as keyof typeof formData.areas_prioritarias])}
+                    onChange={(e) => handleInputChange(`areas_prioritarias.${area.key}`, e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor={area.key}>{area.label}</Label>
+                </div>
+              ))}
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="assinatura_tecnica"
-                  checked={formData.assinatura_tecnica}
-                  onChange={(e) => handleInputChange('assinatura_tecnica', e.target.checked)}
-                  className="rounded border-border"
-                  required
+                  id="outras"
+                  checked={formData.areas_prioritarias.outras}
+                  onChange={(e) => handleInputChange("areas_prioritarias.outras", e.target.checked)}
+                  className="rounded"
                 />
-                <Label htmlFor="assinatura_tecnica" className="text-sm">
-                  Confirmo que as informações acima foram analisadas e registradas por mim, 
-                  <strong> {profile?.nome_completo}</strong>, 
-                  como técnica responsável pelo acompanhamento.
-                </Label>
+                <Label htmlFor="outras">Outras:</Label>
+                <Input
+                  placeholder="Especifique outras áreas..."
+                  value={formData.areas_prioritarias.outras_descricao}
+                  onChange={(e) => handleInputChange("areas_prioritarias.outras_descricao", e.target.value)}
+                  className="flex-1"
+                />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(`/beneficiarias/${beneficiaria.id}`)}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                {existingVisao ? 'Atualizar' : 'Salvar'} Visão Holística
-              </>
-            )}
-          </Button>
-        </div>
-      </form>
+          {/* 3. Ações a Serem Realizadas */}
+          <div className="space-y-3">
+            <Label className="text-lg font-semibold">3. Ações a Serem Realizadas:</Label>
+            <Textarea
+              placeholder="Descreva as ações que serão realizadas..."
+              value={formData.acoes}
+              onChange={(e) => handleInputChange("acoes", e.target.value)}
+              className="min-h-[120px]"
+            />
+          </div>
+
+          {/* 4. Suporte oferecido pelo instituto */}
+          <div className="space-y-3">
+            <Label className="text-lg font-semibold">4. Suporte oferecido pelo instituto:</Label>
+            <Textarea
+              placeholder="Descreva o suporte que o instituto oferecerá..."
+              value={formData.suporte_instituto}
+              onChange={(e) => handleInputChange("suporte_instituto", e.target.value)}
+              className="min-h-[120px]"
+            />
+          </div>
+
+          {/* 5. Avaliação e Reavaliação (Semestral) */}
+          <div className="space-y-4">
+            <Label className="text-lg font-semibold">5. Avaliação e Reavaliação (Semestral)</Label>
+            
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="primeira_avaliacao_data" className="font-medium">Primeira Avaliação:</Label>
+                <Input
+                  id="primeira_avaliacao_data"
+                  type="date"
+                  value={formData.primeira_avaliacao_data}
+                  onChange={(e) => handleInputChange("primeira_avaliacao_data", e.target.value)}
+                  className="w-auto"
+                />
+              </div>
+              <div>
+                <Label className="block mb-1">Revisão do progresso nas áreas de:</Label>
+                <Textarea
+                  placeholder="Descreva o progresso observado na primeira avaliação..."
+                  value={formData.primeira_avaliacao_progresso}
+                  onChange={(e) => handleInputChange("primeira_avaliacao_progresso", e.target.value)}
+                  className="min-h-[80px]"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="segunda_avaliacao_data" className="font-medium">Segunda Avaliação:</Label>
+                <Input
+                  id="segunda_avaliacao_data"
+                  type="date"
+                  value={formData.segunda_avaliacao_data}
+                  onChange={(e) => handleInputChange("segunda_avaliacao_data", e.target.value)}
+                  className="w-auto"
+                />
+              </div>
+              <div>
+                <Label className="block mb-1">Revisão do progresso nas áreas de:</Label>
+                <Textarea
+                  placeholder="Descreva o progresso observado na segunda avaliação..."
+                  value={formData.segunda_avaliacao_progresso}
+                  onChange={(e) => handleInputChange("segunda_avaliacao_progresso", e.target.value)}
+                  className="min-h-[80px]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Assinaturas */}
+          <div className="space-y-3 border-t pt-6">
+            <Label className="text-lg font-semibold">Assinaturas:</Label>
+            <div className="space-y-2 pl-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="assinatura_beneficiaria"
+                  checked={formData.assinatura_beneficiaria}
+                  onChange={(e) => handleInputChange("assinatura_beneficiaria", e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="assinatura_beneficiaria">Beneficiária</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="assinatura_responsavel_tecnico"
+                  checked={formData.assinatura_responsavel_tecnico}
+                  onChange={(e) => handleInputChange("assinatura_responsavel_tecnico", e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="assinatura_responsavel_tecnico">Responsável Técnico</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between pt-6">
+            <div className="space-x-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate(`/beneficiarias/${beneficiaria.id}`)}
+              >
+                Voltar
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate("/beneficiarias")}>
+                Cancelar
+              </Button>
+            </div>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Salvando..." : existingVisao ? "Atualizar Visão Holística" : "Salvar Visão Holística"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

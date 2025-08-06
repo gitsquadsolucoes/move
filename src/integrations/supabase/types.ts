@@ -959,6 +959,10 @@ export type Database = {
       }
       visoes_holisticas: {
         Row: {
+          acoes: string | null
+          areas_prioritarias: Json | null
+          assinatura_beneficiaria: boolean | null
+          assinatura_responsavel_tecnico: boolean | null
           assinatura_tecnica: boolean | null
           beneficiaria_id: string
           data_criacao: string
@@ -966,10 +970,20 @@ export type Database = {
           encaminhamento_projeto: string | null
           historia_vida: string | null
           id: string
+          objetivo_principal: string | null
+          primeira_avaliacao_data: string | null
+          primeira_avaliacao_progresso: string | null
           rede_apoio: string | null
+          segunda_avaliacao_data: string | null
+          segunda_avaliacao_progresso: string | null
+          suporte_instituto: string | null
           visao_tecnica_referencia: string | null
         }
         Insert: {
+          acoes?: string | null
+          areas_prioritarias?: Json | null
+          assinatura_beneficiaria?: boolean | null
+          assinatura_responsavel_tecnico?: boolean | null
           assinatura_tecnica?: boolean | null
           beneficiaria_id: string
           data_criacao?: string
@@ -977,10 +991,20 @@ export type Database = {
           encaminhamento_projeto?: string | null
           historia_vida?: string | null
           id?: string
+          objetivo_principal?: string | null
+          primeira_avaliacao_data?: string | null
+          primeira_avaliacao_progresso?: string | null
           rede_apoio?: string | null
+          segunda_avaliacao_data?: string | null
+          segunda_avaliacao_progresso?: string | null
+          suporte_instituto?: string | null
           visao_tecnica_referencia?: string | null
         }
         Update: {
+          acoes?: string | null
+          areas_prioritarias?: Json | null
+          assinatura_beneficiaria?: boolean | null
+          assinatura_responsavel_tecnico?: boolean | null
           assinatura_tecnica?: boolean | null
           beneficiaria_id?: string
           data_criacao?: string
@@ -988,7 +1012,13 @@ export type Database = {
           encaminhamento_projeto?: string | null
           historia_vida?: string | null
           id?: string
+          objetivo_principal?: string | null
+          primeira_avaliacao_data?: string | null
+          primeira_avaliacao_progresso?: string | null
           rede_apoio?: string | null
+          segunda_avaliacao_data?: string | null
+          segunda_avaliacao_progresso?: string | null
+          suporte_instituto?: string | null
           visao_tecnica_referencia?: string | null
         }
         Relationships: [
