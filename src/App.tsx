@@ -20,6 +20,7 @@ import PlanoAcao from "./pages/formularios/PlanoAcao";
 import TermoConsentimento from "./pages/formularios/TermoConsentimento";
 import MatriculaProjetos from "./pages/formularios/MatriculaProjetos";
 import DeclaracoesRecibos from "./pages/formularios/DeclaracoesRecibos";
+import Analytics from "./pages/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,13 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route path="/analytics" element={
+              <ProtectedRoute adminOnly>
+                <MainLayout>
+                  <Analytics />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
             <Route 
               path="/beneficiarias/:id" 
               element={
