@@ -402,29 +402,7 @@ export default function PAEDIBeneficiaria() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <Badge variant="secondary">Não preenchida</Badge>
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Preencher
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Termo de Consentimento */}
-            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-success" />
-                  Termo de Consentimento
-                </CardTitle>
-                <CardDescription>
-                  TCLE e autorização LGPD
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">Não preenchida</Badge>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/beneficiarias/${id}/termo-consentimento`)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Preencher
                   </Button>
@@ -446,9 +424,31 @@ export default function PAEDIBeneficiaria() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <Badge variant="secondary">Não preenchida</Badge>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/beneficiarias/${id}/matricula-projetos`)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Preencher
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Declarações e Recibos */}
+            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Declarações e Recibos
+                </CardTitle>
+                <CardDescription>
+                  Documentos e benefícios
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">Nenhum documento</Badge>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/beneficiarias/${id}/declaracoes-recibos`)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Gerenciar
                   </Button>
                 </div>
               </CardContent>

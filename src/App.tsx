@@ -12,6 +12,14 @@ import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/main-layout";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import AnamneseSocial from "./pages/formularios/AnamneseSocial";
+import FichaEvolucao from "./pages/formularios/FichaEvolucao";
+import VisaoHolistica from "./pages/formularios/VisaoHolistica";
+import RodaVida from "./pages/formularios/RodaVida";
+import PlanoAcao from "./pages/formularios/PlanoAcao";
+import TermoConsentimento from "./pages/formularios/TermoConsentimento";
+import MatriculaProjetos from "./pages/formularios/MatriculaProjetos";
+import DeclaracoesRecibos from "./pages/formularios/DeclaracoesRecibos";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +72,62 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route path="/beneficiarias/:beneficiariaId/anamnese" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AnamneseSocial />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/beneficiarias/:beneficiariaId/evolucao" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <FichaEvolucao />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/beneficiarias/:beneficiariaId/visao-holistica" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <VisaoHolistica />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/beneficiarias/:beneficiariaId/roda-vida" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <RodaVida />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/beneficiarias/:beneficiariaId/plano-acao" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <PlanoAcao />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/beneficiarias/:beneficiariaId/termo-consentimento" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <TermoConsentimento />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/beneficiarias/:beneficiariaId/matricula-projetos" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <MatriculaProjetos />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/beneficiarias/:beneficiariaId/declaracoes-recibos" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <DeclaracoesRecibos />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
