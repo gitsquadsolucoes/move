@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Heart, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -35,26 +36,66 @@ export default function Auth() {
     setError(null);
 
     try {
-      const { error } = await signIn(loginEmail, loginPassword);
+      console.log('Tentando login com:', { email: loginEmail, password: '***' });
+      
+      // Tentar login direto com supabase para debug
+      const { data, error: directError } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim().toLowerCase(),
+        password: loginPassword,
+      });
 
-      if (error) {
-        console.error('Login error:', error);
-        
-        if (error.message.includes('Invalid login credentials')) {
-          setError('Email ou senha incorretos. Verifique suas credenciais.');
-        } else if (error.message.includes('Email not confirmed')) {
-          setError('Por favor, confirme seu email antes de fazer login.');
-        } else if (error.message.includes('Too many requests')) {
-          setError('Muitas tentativas de login. Aguarde alguns minutos e tente novamente.');
-        } else {
-          setError(error.message || 'Erro ao fazer login. Tente novamente.');
-        }
-      } else {
+      console.log('Resposta do login:', { data, error: directError });
+
+      if (directError) {
+        console.error('Erro direto do Supabase:', directError);
+        setError(`Erro de autenticação: ${directError.message}`);
+      } else if (data.user) {
+        console.log('Login bem-sucedido:', data.user);
         navigate(from, { replace: true });
+      } else {
+        setError('Login falhou sem erro específico');
       }
     } catch (err) {
-      console.error('Unexpected error:', err);
-      setError('Erro inesperado. Tente novamente.');
+      console.error('Erro inesperado:', err);
+      setError('Erro inesperado. Verifique o console para mais detalhes.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createTestUser = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      console.log('Criando usuário de teste...');
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: 'bruno@move.com',
+        password: '15002031',
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            nome_completo: 'Bruno Santos',
+            tipo_usuario: 'admin',
+          }
+        }
+      });
+
+      console.log('Resultado da criação:', { data, error });
+
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          setError('Usuário já existe. Tente fazer login.');
+        } else {
+          setError(`Erro ao criar usuário: ${error.message}`);
+        }
+      } else {
+        setError('Usuário criado! Agora tente fazer login.');
+      }
+    } catch (err) {
+      console.error('Erro ao criar usuário:', err);
+      setError('Erro inesperado ao criar usuário.');
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +121,7 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           {error && (
-            <Alert variant="destructive" className="mb-6">
+            <Alert variant={error.includes('criado') ? 'default' : 'destructive'} className="mb-6">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -91,7 +132,7 @@ export default function Auth() {
               <Input
                 id="email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder="bruno@move.com"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 required
@@ -105,7 +146,7 @@ export default function Auth() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Sua senha"
+                  placeholder="15002031"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   required
@@ -140,9 +181,21 @@ export default function Auth() {
             </Button>
           </form>
           
+          <div className="mt-4">
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={createTestUser}
+              disabled={isLoading}
+            >
+              Criar Usuário de Teste (Debug)
+            </Button>
+          </div>
+          
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Acesso restrito apenas para usuários autorizados</p>
-            <p className="mt-2">Entre em contato com o administrador para obter acesso</p>
+            <p>Credenciais padrão:</p>
+            <p>Email: bruno@move.com</p>
+            <p>Senha: 15002031</p>
           </div>
         </CardContent>
       </Card>
