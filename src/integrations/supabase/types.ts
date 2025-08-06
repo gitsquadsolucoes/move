@@ -371,6 +371,39 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          data_atualizacao: string
+          data_criacao: string
+          email: string
+          id: string
+          nome_completo: string
+          tipo_usuario: Database["public"]["Enums"]["user_type"]
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          data_atualizacao?: string
+          data_criacao?: string
+          email: string
+          id?: string
+          nome_completo: string
+          tipo_usuario?: Database["public"]["Enums"]["user_type"]
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          data_atualizacao?: string
+          data_criacao?: string
+          email?: string
+          id?: string
+          nome_completo?: string
+          tipo_usuario?: Database["public"]["Enums"]["user_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       recibos_beneficio: {
         Row: {
           beneficiaria_id: string
