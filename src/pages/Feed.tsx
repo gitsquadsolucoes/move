@@ -41,31 +41,29 @@ const Feed = () => {
     try {
       const { data, error } = await supabase
         .from('feed_posts')
-        .select(`
-          id,
-          titulo,
-          conteudo,
-          tipo,
-          author_id,
-          anexo_url,
-          fixado,
-          created_at,
-          updated_at,
-          profiles!inner(nome_completo)
-        `)
+        .select('id, titulo, conteudo, tipo, author_id, anexo_url, fixado, created_at, updated_at')
         .eq('ativo', true)
         .order('fixado', { ascending: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
+      // Get author names separately
+      const authorIds = [...new Set(data?.map(p => p.author_id) || [])];
+      const { data: authors } = await supabase
+        .from('profiles')
+        .select('user_id, nome_completo')
+        .in('user_id', authorIds);
+
+      const authorsMap = new Map(authors?.map(a => [a.user_id, a.nome_completo]) || []);
+
       setPosts(data?.map(post => ({
         id: post.id,
         titulo: post.titulo,
         conteudo: post.conteudo,
-        tipo: post.tipo,
+        tipo: post.tipo as 'aviso' | 'noticia' | 'evento' | 'importante',
         author_id: post.author_id,
-        author_name: post.profiles.nome_completo,
+        author_name: authorsMap.get(post.author_id) || 'Usuário',
         anexo_url: post.anexo_url,
         fixado: post.fixado,
         created_at: post.created_at,

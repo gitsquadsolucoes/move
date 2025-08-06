@@ -80,21 +80,25 @@ const Configuracoes = () => {
     try {
       const { data, error } = await supabase
         .from('user_permissions')
-        .select(`
-          id,
-          user_id,
-          module,
-          permission,
-          profiles!inner(nome_completo)
-        `);
+        .select('id, user_id, module, permission');
 
       if (error) throw error;
+      
+      // Get user names separately
+      const userIds = [...new Set(data?.map(p => p.user_id) || [])];
+      const { data: users } = await supabase
+        .from('profiles')
+        .select('user_id, nome_completo')
+        .in('user_id', userIds);
+
+      const usersMap = new Map(users?.map(u => [u.user_id, u.nome_completo]) || []);
+
       setPermissions(data?.map(p => ({
         id: p.id,
         user_id: p.user_id,
         module: p.module,
         permission: p.permission,
-        user_name: p.profiles.nome_completo
+        user_name: usersMap.get(p.user_id) || 'Usuário'
       })) || []);
     } catch (error) {
       console.error('Erro ao carregar permissões:', error);
@@ -134,8 +138,8 @@ const Configuracoes = () => {
     
     const permission = {
       user_id: formData.get('user_id') as string,
-      module: formData.get('module') as string,
-      permission: formData.get('permission') as string,
+      module: formData.get('module') as any,
+      permission: formData.get('permission') as any,
       created_by: profile?.user_id
     };
 

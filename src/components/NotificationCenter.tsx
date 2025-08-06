@@ -39,7 +39,15 @@ const NotificationCenter = () => {
 
       if (error) throw error;
 
-      setNotifications(data || []);
+      setNotifications((data || []).map(n => ({
+        id: n.id,
+        titulo: n.titulo,
+        conteudo: n.conteudo,
+        tipo: n.tipo as 'info' | 'aviso' | 'aniversario' | 'sistema' | 'urgente',
+        lida: n.lida,
+        created_at: n.created_at,
+        url_acao: n.url_acao
+      })));
       setUnreadCount(data?.filter(n => !n.lida).length || 0);
     } catch (error) {
       console.error('Erro ao carregar notificações:', error);
