@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, FileText, Receipt, Download, Calendar, User, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { DocumentDownloadButton } from '@/components/DocumentDownloadButton';
 
 interface Beneficiaria {
   id: string;
@@ -423,10 +424,13 @@ export default function DeclaracoesRecibos() {
                             <Badge variant="outline" className="text-xs">
                               {formatTime(declaracao.hora_entrada)} - {formatTime(declaracao.hora_saida)}
                             </Badge>
-                            <Button variant="outline" size="sm">
-                              <Download className="h-4 w-4 mr-2" />
-                              Gerar PDF
-                            </Button>
+                            <DocumentDownloadButton
+                              documentType="declaracao_comparecimento"
+                              beneficiariaId={beneficiaria.id}
+                              beneficiariaNome={beneficiaria.nome_completo}
+                              formId={declaracao.id}
+                              size="sm"
+                            />
                           </div>
                         </div>
                       </CardContent>
