@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { BeneficiariaSelection } from '@/components/BeneficiariaSelection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,6 +98,8 @@ export default function MatriculaProjetos() {
         loadBeneficiaria(),
         loadMatriculas()
       ]);
+    } else {
+      setLoading(false);
     }
   }, [beneficiariaId]);
 
@@ -241,6 +244,16 @@ export default function MatriculaProjetos() {
           <p className="text-muted-foreground">Carregando matrículas...</p>
         </div>
       </div>
+    );
+  }
+
+  // Se não há beneficiariaId, mostra interface de seleção
+  if (!beneficiariaId) {
+    return (
+      <BeneficiariaSelection 
+        title="Matrícula de Projetos" 
+        description="Selecione uma beneficiária para registrar matrícula em projetos"
+      />
     );
   }
 

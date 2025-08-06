@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 // Dynamic activities will be loaded from database
 
@@ -281,8 +282,8 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="mt-4">
-              <Button variant="outline" className="w-full">
-                Ver todas as atividades
+              <Button variant="outline" className="w-full" asChild>
+                <Link to="/relatorios">Ver todas as atividades</Link>
               </Button>
             </div>
           </CardContent>
@@ -323,8 +324,8 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="mt-4">
-              <Button variant="outline" className="w-full">
-                Ver todas as tarefas
+              <Button variant="outline" className="w-full" asChild>
+                <Link to="/relatorios">Ver todas as tarefas</Link>
               </Button>
             </div>
           </CardContent>
@@ -341,21 +342,29 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-            <Button variant="gradient" className="h-auto p-4 flex-col gap-2">
-              <Users className="h-6 w-6" />
-              <span className="text-sm">Nova Beneficiária</span>
+            <Button variant="gradient" className="h-auto p-4 flex-col gap-2" asChild>
+              <Link to="/beneficiarias/nova">
+                <Users className="h-6 w-6" />
+                <span className="text-sm">Nova Beneficiária</span>
+              </Link>
             </Button>
-            <Button variant="default" className="h-auto p-4 flex-col gap-2">
-              <FileText className="h-6 w-6" />
-              <span className="text-sm">Declaração</span>
+            <Button variant="default" className="h-auto p-4 flex-col gap-2" asChild>
+              <Link to="/formularios/declaracao">
+                <FileText className="h-6 w-6" />
+                <span className="text-sm">Declaração</span>
+              </Link>
             </Button>
-            <Button variant="default" className="h-auto p-4 flex-col gap-2">
-              <Calendar className="h-6 w-6" />
-              <span className="text-sm">Agendar Atendimento</span>
+            <Button variant="default" className="h-auto p-4 flex-col gap-2" asChild>
+              <Link to="/oficinas">
+                <Calendar className="h-6 w-6" />
+                <span className="text-sm">Agendar Atendimento</span>
+              </Link>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex-col gap-2">
-              <TrendingUp className="h-6 w-6" />
-              <span className="text-sm">Relatórios</span>
+            <Button variant="outline" className="h-auto p-4 flex-col gap-2" asChild>
+              <Link to="/relatorios">
+                <TrendingUp className="h-6 w-6" />
+                <span className="text-sm">Relatórios</span>
+              </Link>
             </Button>
           </div>
         </CardContent>
