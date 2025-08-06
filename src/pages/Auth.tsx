@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Heart, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,20 +12,11 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Login form
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
-  // Signup form
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [nomeCompleto, setNomeCompleto] = useState('');
-  const [tipoUsuario, setTipoUsuario] = useState<'admin' | 'profissional'>('profissional');
-  
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -45,251 +34,118 @@ export default function Auth() {
     setIsLoading(true);
     setError(null);
 
-    const { error } = await signIn(loginEmail, loginPassword);
+    try {
+      const { error } = await signIn(loginEmail, loginPassword);
 
-    if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        setError('Email ou senha incorretos. Verifique suas credenciais.');
-      } else if (error.message.includes('Email not confirmed')) {
-        setError('Por favor, confirme seu email antes de fazer login.');
+      if (error) {
+        console.error('Login error:', error);
+        
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Email ou senha incorretos. Verifique suas credenciais.');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Por favor, confirme seu email antes de fazer login.');
+        } else if (error.message.includes('Too many requests')) {
+          setError('Muitas tentativas de login. Aguarde alguns minutos e tente novamente.');
+        } else {
+          setError(error.message || 'Erro ao fazer login. Tente novamente.');
+        }
       } else {
-        setError(error.message || 'Erro ao fazer login. Tente novamente.');
+        navigate(from, { replace: true });
       }
-    } else {
-      navigate(from, { replace: true });
-    }
-
-    setIsLoading(false);
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    // Validation
-    if (!nomeCompleto.trim()) {
-      setError('Nome completo é obrigatório.');
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError('Erro inesperado. Tente novamente.');
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    if (signupPassword !== confirmPassword) {
-      setError('As senhas não coincidem.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (signupPassword.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres.');
-      setIsLoading(false);
-      return;
-    }
-
-    const { error } = await signUp(signupEmail, signupPassword, nomeCompleto, tipoUsuario);
-
-    if (error) {
-      if (error.message.includes('User already registered')) {
-        setError('Este email já está cadastrado. Tente fazer login.');
-      } else if (error.message.includes('Password should be at least 6 characters')) {
-        setError('A senha deve ter pelo menos 6 caracteres.');
-      } else {
-        setError(error.message || 'Erro ao criar conta. Tente novamente.');
-      }
-    } else {
-      setError(null);
-      // Show success message
-      setError('Conta criada com sucesso! Verifique seu email para confirmar a conta.');
-    }
-
-    setIsLoading(false);
   };
 
   if (user) {
-    return null; // Will redirect via useEffect
+    return null; // Will be redirected by useEffect
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <Heart className="h-8 w-8 text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <Heart className="h-8 w-8 text-white" />
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Instituto Move Marias</h1>
-          <p className="text-muted-foreground">Sistema de Gestão</p>
-        </div>
-
-        <Card className="shadow-elegant">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Acesso ao Sistema</CardTitle>
-            <CardDescription className="text-center">
-              Entre com suas credenciais ou crie uma nova conta
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="login" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Criar Conta</TabsTrigger>
-              </TabsList>
-
-              {error && (
-                <Alert variant={error.includes('sucesso') ? 'default' : 'destructive'}>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+          <CardTitle className="text-2xl text-center">Instituto Move Marias</CardTitle>
+          <CardDescription className="text-center">
+            Sistema de Gestão - Acesso Restrito
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                required
+                disabled={isLoading}
+                autoComplete="email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Sua senha"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                'Entrar'
               )}
-
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="loginEmail">Email</Label>
-                    <Input
-                      id="loginEmail"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="loginPassword">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="loginPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                        disabled={isLoading}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Entrar
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nomeCompleto">Nome Completo</Label>
-                    <Input
-                      id="nomeCompleto"
-                      type="text"
-                      placeholder="Seu nome completo"
-                      value={nomeCompleto}
-                      onChange={(e) => setNomeCompleto(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signupEmail">Email</Label>
-                    <Input
-                      id="signupEmail"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tipoUsuario">Tipo de Usuário</Label>
-                    <Select 
-                      value={tipoUsuario} 
-                      onValueChange={(value: 'admin' | 'profissional') => setTipoUsuario(value)}
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="profissional">Profissional</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signupPassword">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="signupPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={signupPassword}
-                        onChange={(e) => setSignupPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                        disabled={isLoading}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        disabled={isLoading}
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Criar Conta
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <div className="text-center mt-6 text-sm text-muted-foreground">
-          <p>Problemas para acessar? Entre em contato com o administrador.</p>
-        </div>
-      </div>
+            </Button>
+          </form>
+          
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <p>Acesso restrito apenas para usuários autorizados</p>
+            <p className="mt-2">Entre em contato com o administrador para obter acesso</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
