@@ -25,6 +25,8 @@ import Oficinas from "./pages/Oficinas";
 import Feed from "./pages/Feed";
 import Configuracoes from "./pages/Configuracoes";
 import Relatorios from "./pages/Relatorios";
+import Atividades from "./pages/Atividades";
+import Tarefas from "./pages/Tarefas";
 
 const queryClient = new QueryClient();
 
@@ -165,6 +167,20 @@ const App = () => (
               <ProtectedRoute>
                 <MainLayout>
                   <Relatorios />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/atividades" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Atividades />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/tarefas" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Tarefas />
                 </MainLayout>
               </ProtectedRoute>
             } />

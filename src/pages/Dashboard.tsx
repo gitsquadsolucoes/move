@@ -283,7 +283,7 @@ export default function Dashboard() {
             </div>
             <div className="mt-4">
               <Button variant="outline" className="w-full" asChild>
-                <Link to="/relatorios">Ver todas as atividades</Link>
+                <Link to="/atividades">Ver todas as atividades</Link>
               </Button>
             </div>
           </CardContent>
@@ -325,7 +325,7 @@ export default function Dashboard() {
             </div>
             <div className="mt-4">
               <Button variant="outline" className="w-full" asChild>
-                <Link to="/relatorios">Ver todas as tarefas</Link>
+                <Link to="/tarefas">Ver todas as tarefas</Link>
               </Button>
             </div>
           </CardContent>
