@@ -625,6 +625,10 @@ export type Database = {
         Args: { birth_date: string }
         Returns: number
       }
+      create_admin_user: {
+        Args: { p_email: string; p_nome_completo: string }
+        Returns: undefined
+      }
     }
     Enums: {
       user_type: "admin" | "profissional"
