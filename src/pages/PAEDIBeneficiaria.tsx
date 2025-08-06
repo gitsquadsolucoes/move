@@ -314,7 +314,7 @@ export default function PAEDIBeneficiaria() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <Badge variant="secondary">Não preenchida</Badge>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/beneficiarias/${id}/anamnese`)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Preencher
                   </Button>
@@ -336,7 +336,7 @@ export default function PAEDIBeneficiaria() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <Badge variant="secondary">Não preenchida</Badge>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/beneficiarias/${id}/roda-vida`)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Preencher
                   </Button>
@@ -358,7 +358,7 @@ export default function PAEDIBeneficiaria() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <Badge variant="secondary">Não preenchida</Badge>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/beneficiarias/${id}/visao-holistica`)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Preencher
                   </Button>
@@ -375,6 +375,28 @@ export default function PAEDIBeneficiaria() {
                 </CardTitle>
                 <CardDescription>
                   Objetivos e metas personalizadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">Não preenchida</Badge>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/beneficiarias/${id}/plano-acao`)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Preencher
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Termo de Consentimento */}
+            <Card className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-success" />
+                  Termo de Consentimento
+                </CardTitle>
+                <CardDescription>
+                  TCLE e autorização LGPD
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -451,7 +473,7 @@ export default function PAEDIBeneficiaria() {
                 <p className="text-muted-foreground mb-4">
                   Nenhuma evolução registrada ainda
                 </p>
-                <Button>
+                <Button onClick={() => navigate(`/beneficiarias/${id}/evolucao`)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Registrar Evolução
                 </Button>
