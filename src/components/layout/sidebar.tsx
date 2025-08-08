@@ -15,7 +15,9 @@ import {
   Eye,
   Target,
   GraduationCap,
-  TrendingUp
+  TrendingUp,
+  FolderKanban,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -42,9 +44,19 @@ const menuItems = [
     href: "/oficinas"
   },
   {
+    title: "Projetos",
+    icon: FolderKanban,
+    href: "/projetos"
+  },
+  {
     title: "Feed",
     icon: Heart,
     href: "/feed"
+  },
+  {
+    title: "Mensagens",
+    icon: MessageCircle,
+    href: "/mensagens"
   },
   {
     title: "Formulários",

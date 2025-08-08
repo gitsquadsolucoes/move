@@ -10,6 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Save, UserPlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useBeneficiariaValidation } from '@/hooks/useFormValidation';
+import { DocumentValidator } from '@/lib/validators';
+import { logger } from '@/lib/logger';
 
 export default function CadastroBeneficiaria() {
   const navigate = useNavigate();
@@ -17,6 +20,9 @@ export default function CadastroBeneficiaria() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  
+  // Hook de validação
+  const { errors, validateForm, validateField, clearFieldError } = useBeneficiariaValidation();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -37,36 +43,31 @@ export default function CadastroBeneficiaria() {
   });
 
   const handleInputChange = (field: string, value: string) => {
+    // Aplicar formatação automática para documentos
+    let formattedValue = value;
+    if (field === 'cpf') {
+      formattedValue = DocumentValidator.formatCPF(value);
+    } else if (field === 'contato1' || field === 'contato2') {
+      formattedValue = DocumentValidator.formatPhone(value);
+    }
+
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: formattedValue
     }));
-  };
 
-  const validateForm = () => {
-    if (!formData.nome_completo.trim()) {
-      setError('Nome completo é obrigatório');
-      return false;
+    // Limpar erro do campo quando usuário começar a digitar
+    if (errors[field]) {
+      clearFieldError(field);
     }
-    if (!formData.cpf.replace(/\D/g, '')) {
-      setError('CPF é obrigatório');
-      return false;
-    }
-    if (!formData.data_nascimento) {
-      setError('Data de nascimento é obrigatória');
-      return false;
-    }
-    if (!formData.contato1.replace(/\D/g, '')) {
-      setError('Pelo menos um telefone de contato é obrigatório');
-      return false;
-    }
-    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    // Validar formulário
+    if (!validateForm(formData)) {
+      setError('Por favor, corrija os erros antes de continuar');
       return;
     }
 
@@ -74,57 +75,43 @@ export default function CadastroBeneficiaria() {
     setError(null);
 
     try {
-      const cleanData = {
-        ...formData,
-        cpf: formData.cpf.replace(/\D/g, ''),
-        contato1: formData.contato1.replace(/\D/g, ''),
-        contato2: formData.contato2.replace(/\D/g, '') || null,
-        data_emissao_rg: formData.data_emissao_rg || null,
-        nis: formData.nis || null,
-        referencia: formData.referencia || null,
-        programa_servico: formData.programa_servico || null,
-        created_by: profile?.id,
-        updated_by: profile?.id
-      };
+      logger.info('Iniciando cadastro de beneficiária', {
+        page: '/cadastro-beneficiaria',
+        action: 'form_submit'
+      });
 
-      const { data, error } = await supabase
+      const { error: insertError } = await supabase
         .from('beneficiarias')
-        .insert([cleanData])
-        .select()
-        .single();
+        .insert([{
+          ...formData,
+          cpf: formData.cpf.replace(/\D/g, ''), // Salvar apenas números
+          created_by: profile?.id,
+          updated_by: profile?.id
+        }]);
 
-      if (error) {
-        if (error.code === '23505') {
-          setError('Este CPF já está cadastrado no sistema');
-        } else {
-          setError(`Erro ao cadastrar beneficiária: ${error.message}`);
-        }
-        return;
+      if (insertError) {
+        throw insertError;
       }
 
       setSuccess(true);
+      logger.info('Beneficiária cadastrada com sucesso', {
+        page: '/cadastro-beneficiaria',
+        action: 'beneficiaria_created'
+      });
+      
       setTimeout(() => {
         navigate('/beneficiarias');
       }, 2000);
 
-    } catch (error) {
-      console.error('Erro ao cadastrar beneficiária:', error);
-      setError('Erro interno. Tente novamente.');
+    } catch (error: any) {
+      logger.error('Erro ao cadastrar beneficiária', error, {
+        page: '/cadastro-beneficiaria',
+        action: 'form_submit_error'
+      });
+      setError(error.message || 'Erro ao cadastrar beneficiária');
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatCpf = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    const formatted = numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    return formatted.slice(0, 14);
-  };
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    const formatted = numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    return formatted.slice(0, 15);
   };
 
   return (
@@ -184,18 +171,26 @@ export default function CadastroBeneficiaria() {
                   onChange={(e) => handleInputChange('nome_completo', e.target.value)}
                   placeholder="Nome completo da beneficiária"
                   required
+                  className={errors.nome_completo ? 'border-red-500' : ''}
                 />
+                {errors.nome_completo && (
+                  <p className="text-sm text-red-500">{errors.nome_completo}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cpf">CPF *</Label>
                 <Input
                   id="cpf"
                   value={formData.cpf}
-                  onChange={(e) => handleInputChange('cpf', formatCpf(e.target.value))}
+                  onChange={(e) => handleInputChange('cpf', e.target.value)}
                   placeholder="000.000.000-00"
                   maxLength={14}
                   required
+                  className={errors.cpf ? 'border-red-500' : ''}
                 />
+                {errors.cpf && (
+                  <p className="text-sm text-red-500">{errors.cpf}</p>
+                )}
               </div>
             </div>
 
@@ -207,7 +202,11 @@ export default function CadastroBeneficiaria() {
                   value={formData.rg}
                   onChange={(e) => handleInputChange('rg', e.target.value)}
                   placeholder="Número do RG"
+                  className={errors.rg ? 'border-red-500' : ''}
                 />
+                {errors.rg && (
+                  <p className="text-sm text-red-500">{errors.rg}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="orgao_emissor_rg">Órgão Emissor</Label>
@@ -238,7 +237,11 @@ export default function CadastroBeneficiaria() {
                   value={formData.data_nascimento}
                   onChange={(e) => handleInputChange('data_nascimento', e.target.value)}
                   required
+                  className={errors.data_nascimento ? 'border-red-500' : ''}
                 />
+                {errors.data_nascimento && (
+                  <p className="text-sm text-red-500">{errors.data_nascimento}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nis">NIS</Label>
@@ -270,7 +273,11 @@ export default function CadastroBeneficiaria() {
                 onChange={(e) => handleInputChange('endereco', e.target.value)}
                 placeholder="Rua, número, complemento..."
                 rows={3}
+                className={errors.endereco ? 'border-red-500' : ''}
               />
+              {errors.endereco && (
+                <p className="text-sm text-red-500">{errors.endereco}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="bairro">Bairro</Label>
@@ -299,18 +306,22 @@ export default function CadastroBeneficiaria() {
                 <Input
                   id="contato1"
                   value={formData.contato1}
-                  onChange={(e) => handleInputChange('contato1', formatPhone(e.target.value))}
+                  onChange={(e) => handleInputChange('contato1', e.target.value)}
                   placeholder="(11) 99999-9999"
                   maxLength={15}
                   required
+                  className={errors.contato1 ? 'border-red-500' : ''}
                 />
+                {errors.contato1 && (
+                  <p className="text-sm text-red-500">{errors.contato1}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="contato2">Telefone Secundário</Label>
                 <Input
                   id="contato2"
                   value={formData.contato2}
-                  onChange={(e) => handleInputChange('contato2', formatPhone(e.target.value))}
+                  onChange={(e) => handleInputChange('contato2', e.target.value)}
                   placeholder="(11) 99999-9999"
                   maxLength={15}
                 />
@@ -386,10 +397,22 @@ export default function CadastroBeneficiaria() {
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <Save className="mr-2 h-4 w-4" />
-            Cadastrar Beneficiária
+          <Button
+            type="submit"
+            disabled={loading}
+            className="bg-primary hover:bg-primary/90"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Cadastrando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Cadastrar Beneficiária
+              </>
+            )}
           </Button>
         </div>
       </form>

@@ -15,8 +15,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Em desenvolvimento com configurações dummy, permita acesso sem autenticação
+  const isDevelopmentMode = import.meta.env.VITE_SUPABASE_URL?.includes('dummy') || 
+                           import.meta.env.VITE_SUPABASE_ANON_KEY === 'dummy-anon-key';
+
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !isDevelopmentMode) {
       if (!user) {
         // Redirect to auth page, preserving the intended destination
         navigate('/auth', { 
@@ -28,10 +32,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         navigate('/', { replace: true });
       }
     }
-  }, [user, profile, loading, navigate, location, adminOnly]);
+  }, [user, profile, loading, navigate, location, adminOnly, isDevelopmentMode]);
 
-  // Show loading while checking authentication
-  if (loading) {
+  // Show loading while checking authentication (exceto em modo desenvolvimento)
+  if (loading && !isDevelopmentMode) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -40,6 +44,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         </div>
       </div>
     );
+  }
+
+  // Em modo desenvolvimento, permita acesso direto
+  if (isDevelopmentMode) {
+    return <>{children}</>;
   }
 
   // Don't render children if user is not authenticated or doesn't have required permissions

@@ -32,12 +32,14 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
       <div className="flex items-center gap-4">
-        <img 
-          src={logo} 
-          alt="Move Marias Logo" 
-          className="h-8 w-auto"
-        />
-        <h2 className="text-lg font-semibold text-foreground">
+        <div className="flex items-center">
+          <img 
+            src={logo} 
+            alt="Move Marias Logo" 
+            className="h-12 w-auto object-contain"
+          />
+        </div>
+        <h2 className="text-lg font-semibold text-foreground md:block hidden">
           Sistema de Gestão - Instituto Move Marias
         </h2>
       </div>

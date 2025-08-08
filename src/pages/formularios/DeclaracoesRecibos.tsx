@@ -90,6 +90,33 @@ export default function DeclaracoesRecibos() {
 
   const loadBeneficiaria = async () => {
     try {
+      // Verifica se está usando configuração dummy tentando acessar o supabase
+      let isDummyConfig = false;
+      try {
+        await supabase.auth.getSession();
+      } catch (error) {
+        isDummyConfig = true;
+      }
+      
+      if (isDummyConfig) {
+        // Dados mock para desenvolvimento
+        const mockBeneficiaria = {
+          id: beneficiariaId,
+          nome_completo: 'Maria Silva Santos',
+          cpf: '123.456.789-00',
+          data_nascimento: '1985-05-15',
+          telefone: '(11) 98765-4321',
+          endereco: 'Rua das Flores, 123',
+          bairro: 'Centro',
+          cidade: 'São Paulo',
+          cep: '01234-567',
+          rg: '12.345.678-9',
+          created_at: new Date().toISOString()
+        };
+        setBeneficiaria(mockBeneficiaria);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('beneficiarias')
         .select('*')
@@ -110,6 +137,38 @@ export default function DeclaracoesRecibos() {
 
   const loadDeclaracoes = async () => {
     try {
+      // Verifica se está usando configuração dummy tentando acessar o supabase
+      let isDummyConfig = false;
+      try {
+        await supabase.auth.getSession();
+      } catch (error) {
+        isDummyConfig = true;
+      }
+      
+      if (isDummyConfig) {
+        // Dados mock para desenvolvimento
+        const mockDeclaracoes: DeclaracaoComparecimento[] = [
+          {
+            id: '1',
+            data_comparecimento: '2024-01-15',
+            hora_entrada: '09:00',
+            hora_saida: '12:00',
+            profissional_responsavel: 'Ana Costa',
+            data_criacao: new Date().toISOString()
+          },
+          {
+            id: '2',
+            data_comparecimento: '2024-01-10',
+            hora_entrada: '14:00',
+            hora_saida: '17:00',
+            profissional_responsavel: 'Carlos Oliveira',
+            data_criacao: new Date().toISOString()
+          }
+        ];
+        setDeclaracoes(mockDeclaracoes);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('declaracoes_comparecimento')
         .select('*')
@@ -130,6 +189,35 @@ export default function DeclaracoesRecibos() {
   const loadRecibos = async () => {
     try {
       setLoading(true);
+      
+      // Verifica se está usando configuração dummy tentando acessar o supabase
+      let isDummyConfig = false;
+      try {
+        await supabase.auth.getSession();
+      } catch (error) {
+        isDummyConfig = true;
+      }
+      
+      if (isDummyConfig) {
+        // Dados mock para desenvolvimento
+        const mockRecibos: ReciboBeneficio[] = [
+          {
+            id: '1',
+            tipo_beneficio: 'Auxílio Alimentação',
+            data_recebimento: '2024-01-20',
+            data_criacao: new Date().toISOString()
+          },
+          {
+            id: '2',
+            tipo_beneficio: 'Auxílio Transporte',
+            data_recebimento: '2024-01-15',
+            data_criacao: new Date().toISOString()
+          }
+        ];
+        setRecibos(mockRecibos);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('recibos_beneficio')
         .select('*')

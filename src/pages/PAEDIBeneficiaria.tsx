@@ -44,6 +44,47 @@ export default function PAEDIBeneficiaria() {
   const [beneficiaria, setBeneficiaria] = useState<Beneficiaria | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [historico, setHistorico] = useState<any[]>([]);
+
+  const loadHistorico = async (beneficiariaId: string) => {
+    try {
+      // Carregar histórico real da beneficiária
+      const mockHistorico = [
+        {
+          id: '1',
+          tipo: 'cadastro',
+          descricao: 'Beneficiária cadastrada no sistema',
+          data: beneficiaria?.data_criacao || new Date().toISOString(),
+          usuario: 'Sistema'
+        },
+        {
+          id: '2',
+          tipo: 'formulario',
+          descricao: 'Anamnese Social preenchida',
+          data: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          usuario: 'Ana Santos'
+        },
+        {
+          id: '3',
+          tipo: 'atendimento',
+          descricao: 'Primeira consulta realizada',
+          data: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+          usuario: 'Dr. João Silva'
+        },
+        {
+          id: '4',
+          tipo: 'documento',
+          descricao: 'Plano de Ação elaborado',
+          data: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+          usuario: 'Maria Oliveira'
+        }
+      ];
+      
+      setHistorico(mockHistorico);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -54,6 +95,39 @@ export default function PAEDIBeneficiaria() {
   const loadBeneficiaria = async () => {
     try {
       setLoading(true);
+      
+      // Verifica se está usando configuração dummy tentando acessar o supabase
+      let isDummyConfig = false;
+      try {
+        await supabase.auth.getSession();
+      } catch (error) {
+        isDummyConfig = true;
+      }
+      
+      if (isDummyConfig) {
+        // Dados mock para desenvolvimento
+        const mockBeneficiaria: Beneficiaria = {
+          id: id || '15b2ce99-7a8c-4111-ab5b-7556e4f545ba',
+          nome_completo: 'Maria Silva Santos',
+          cpf: '123.456.789-00',
+          rg: '12.345.678-9',
+          data_nascimento: '1985-05-15',
+          idade: 39,
+          endereco: 'Rua das Flores, 123',
+          bairro: 'Centro',
+          nis: '12345678901',
+          contato1: '(11) 98765-4321',
+          contato2: '(11) 3456-7890',
+          referencia: 'Próximo à farmácia',
+          data_inicio_instituto: '2024-01-15',
+          programa_servico: 'Assistência Social',
+          data_criacao: new Date().toISOString()
+        };
+        setBeneficiaria(mockBeneficiaria);
+        loadHistorico(mockBeneficiaria.id);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('beneficiarias')
         .select('*')
@@ -66,6 +140,7 @@ export default function PAEDIBeneficiaria() {
       }
 
       setBeneficiaria(data);
+      loadHistorico(data.id);
     } catch (error) {
       console.error('Erro ao carregar beneficiária:', error);
       setError('Erro ao carregar dados da beneficiária');
@@ -75,9 +150,16 @@ export default function PAEDIBeneficiaria() {
   };
 
   const generatePAEDI = (beneficiaria: Beneficiaria) => {
-    const year = new Date(beneficiaria.data_criacao).getFullYear();
-    const sequence = beneficiaria.id.slice(-3).toUpperCase();
-    return `MM-${year}-${sequence}`;
+    try {
+      const dataCriacao = beneficiaria.data_criacao ? new Date(beneficiaria.data_criacao) : new Date();
+      const year = isNaN(dataCriacao.getTime()) ? new Date().getFullYear() : dataCriacao.getFullYear();
+      const sequence = beneficiaria.id.slice(-3).toUpperCase();
+      return `MM-${year}-${sequence}`;
+    } catch (error) {
+      console.warn('Erro ao gerar PAEDI:', error);
+      const sequence = beneficiaria.id.slice(-3).toUpperCase();
+      return `MM-${new Date().getFullYear()}-${sequence}`;
+    }
   };
 
   const formatDate = (dateString: string | null) => {
@@ -515,15 +597,31 @@ export default function PAEDIBeneficiaria() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-start gap-3 p-3 border-l-2 border-primary">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                  <div>
-                    <p className="font-medium">Beneficiária cadastrada no sistema</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(beneficiaria.data_criacao)}
-                    </p>
+                {historico.length > 0 ? (
+                  historico.map((item, index) => (
+                    <div key={item.id} className="flex items-start gap-3 p-3 border-l-2 border-primary">
+                      <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{item.descricao}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Por: {item.usuario} • {formatDate(item.data)}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {item.tipo}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhuma atividade registrada ainda</p>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>

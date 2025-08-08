@@ -23,6 +23,29 @@ export default function Tarefas() {
   const [filter, setFilter] = useState("todas");
   const navigate = useNavigate();
 
+  const handleCompleteTarefa = (taskId: string) => {
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === taskId 
+          ? { ...task, status: 'completed' as const }
+          : task
+      )
+    );
+  };
+
+  const handleRescheduleTarefa = (taskId: string) => {
+    const newDueDate = prompt('Nova data (DD/MM/AAAA):');
+    if (newDueDate) {
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, due: newDueDate, status: 'pending' as const }
+            : task
+        )
+      );
+    }
+  };
+
   useEffect(() => {
     loadTasks();
   }, [filter]);
@@ -308,9 +331,34 @@ export default function Tarefas() {
                         </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
-                      {task.status === "completed" ? "Visualizar" : "Marcar como concluída"}
-                    </Button>
+                    <div className="flex gap-2">
+                      {task.status !== "completed" && (
+                        <>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleCompleteTarefa(task.id)}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Concluir
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleRescheduleTarefa(task.id)}
+                          >
+                            <Clock className="w-4 h-4 mr-1" />
+                            Reprogramar
+                          </Button>
+                        </>
+                      )}
+                      {task.status === "completed" && (
+                        <Button variant="outline" size="sm" disabled>
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Concluída
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -7,10 +7,17 @@ interface Profile {
   user_id: string;
   nome_completo: string;
   email: string;
-  tipo_usuario: 'admin' | 'profissional';
-  avatar_url?: string;
+  telefone?: string;
+  cargo?: string;
+  departamento?: string;
+  foto_url?: string;
+  bio?: string;
+  endereco?: string;
+  data_nascimento?: string;
+  tipo_usuario: 'super_admin' | 'admin' | 'coordenador' | 'profissional' | 'assistente';
+  ativo: boolean;
   data_criacao: string;
-  data_atualizacao: string;
+  ultimo_acesso?: string;
 }
 
 interface AuthContextType {
@@ -47,6 +54,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Verifica se está usando configuração dummy tentando acessar o supabase
+      let isDummyConfig = false;
+      try {
+        await supabase.auth.getSession();
+      } catch (error) {
+        isDummyConfig = true;
+      }
+      
+      if (isDummyConfig || import.meta.env.VITE_SUPABASE_URL?.includes('dummy')) {
+        // Dados mock para desenvolvimento - usuário administrador
+        const mockProfile: Profile = {
+          id: userId,
+          user_id: userId,
+          nome_completo: 'Administrador Move Marias',
+          email: 'admin@movemarias.org',
+          telefone: '(11) 99999-0000',
+          cargo: 'Coordenadora Geral',
+          departamento: 'Administração',
+          foto_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b526?w=400',
+          bio: 'Coordenadora responsável pela gestão geral do sistema Move Marias.',
+          endereco: 'São Paulo, SP',
+          data_nascimento: '1985-01-01',
+          tipo_usuario: 'super_admin',
+          ativo: true,
+          data_criacao: new Date().toISOString(),
+          ultimo_acesso: new Date().toISOString()
+        };
+        setProfile(mockProfile);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -58,7 +96,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      setProfile(data);
+      if (data) {
+        setProfile({
+          ...data,
+          ativo: (data as any).ativo ?? true,
+          telefone: (data as any).telefone || '',
+          cargo: (data as any).cargo || '',
+          departamento: (data as any).departamento || '',
+          foto_url: (data as any).foto_url || (data as any).avatar_url || '',
+          bio: (data as any).bio || '',
+          endereco: (data as any).endereco || '',
+          data_nascimento: (data as any).data_nascimento || '',
+          ultimo_acesso: (data as any).ultimo_acesso || new Date().toISOString()
+        });
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -145,8 +196,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { error };
   };
 
-  const isAdmin = profile?.tipo_usuario === 'admin';
-  const isProfissional = profile?.tipo_usuario === 'profissional';
+  // Computed values with safe fallbacks
+  const isAdmin = profile?.tipo_usuario === 'admin' || profile?.tipo_usuario === 'super_admin' || false;
+  const isProfissional = profile?.tipo_usuario === 'profissional' || false;
 
   const value: AuthContextType = {
     user,

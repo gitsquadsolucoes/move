@@ -3,10 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Beneficiarias from "./pages/Beneficiarias";
 import CadastroBeneficiaria from "./pages/CadastroBeneficiaria";
+import EditarBeneficiaria from "./pages/EditarBeneficiaria";
 import PAEDIBeneficiaria from "./pages/PAEDIBeneficiaria";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/main-layout";
@@ -22,8 +24,12 @@ import MatriculaProjetos from "./pages/formularios/MatriculaProjetos";
 import DeclaracoesRecibos from "./pages/formularios/DeclaracoesRecibos";
 import Analytics from "./pages/Analytics";
 import Oficinas from "./pages/Oficinas";
-import Feed from "./pages/Feed";
-import Configuracoes from "./pages/Configuracoes";
+import Projetos from "./pages/Projetos";
+import ParticipantesProjeto from "./pages/ParticipantesProjeto";
+import Feed from "./pages/FeedWithComments";
+import Configuracoes from "./pages/ConfiguracoesNew";
+import EditarPerfil from "./components/EditarPerfil";
+import Mensagens from "./pages/Mensagens";
 import Relatorios from "./pages/Relatorios";
 import Atividades from "./pages/Atividades";
 import Tarefas from "./pages/Tarefas";
@@ -31,61 +37,36 @@ import Tarefas from "./pages/Tarefas";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Index />
-                  </MainLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/beneficiarias" 
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Beneficiarias />
-                  </MainLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/beneficiarias/nova" 
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <CadastroBeneficiaria />
-                  </MainLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/analytics" element={
-              <ProtectedRoute adminOnly>
+            <Route path="/" element={
+              <ProtectedRoute>
                 <MainLayout>
-                  <Analytics />
+                  <Index />
                 </MainLayout>
               </ProtectedRoute>
             } />
-            <Route 
-              path="/beneficiarias/:id" 
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <PAEDIBeneficiaria />
-                  </MainLayout>
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/beneficiarias" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Beneficiarias />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/beneficiarias/nova" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <CadastroBeneficiaria />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/beneficiarias/:beneficiariaId/anamnese" element={
               <ProtectedRoute>
                 <MainLayout>
@@ -142,10 +123,44 @@ const App = () => (
                 </MainLayout>
               </ProtectedRoute>
             } />
+            <Route 
+              path="/beneficiarias/:beneficiariaId/editar" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <EditarBeneficiaria />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/beneficiarias/:id" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PAEDIBeneficiaria />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/oficinas" element={
               <ProtectedRoute>
                 <MainLayout>
                   <Oficinas />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/projetos" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Projetos />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/projetos/:projetoId/participantes" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ParticipantesProjeto />
                 </MainLayout>
               </ProtectedRoute>
             } />
@@ -156,10 +171,10 @@ const App = () => (
                 </MainLayout>
               </ProtectedRoute>
             } />
-            <Route path="/configuracoes" element={
-              <ProtectedRoute adminOnly>
+            <Route path="/mensagens" element={
+              <ProtectedRoute>
                 <MainLayout>
-                  <Configuracoes />
+                  <Mensagens />
                 </MainLayout>
               </ProtectedRoute>
             } />
@@ -181,6 +196,27 @@ const App = () => (
               <ProtectedRoute>
                 <MainLayout>
                   <Tarefas />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/configuracoes" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Configuracoes />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/perfil/editar" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <EditarPerfil />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Analytics />
                 </MainLayout>
               </ProtectedRoute>
             } />
@@ -255,6 +291,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

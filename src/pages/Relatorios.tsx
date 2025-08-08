@@ -6,6 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Download, Calendar, Users, TrendingUp, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger, useLogger } from "@/lib/logger";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface ReportData {
   beneficiarias: number;
@@ -24,6 +28,7 @@ export default function Relatorios() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("mensal");
   const { toast } = useToast();
+  const { logError, logInfo, trackAction } = useLogger();
 
   useEffect(() => {
     loadReportData();
@@ -99,18 +104,169 @@ export default function Relatorios() {
   };
 
   const exportReport = async (type: string) => {
-    toast({
-      title: "Exportando relatório",
-      description: `Gerando relatório ${type}...`
-    });
-    
-    // Aqui seria implementada a lógica de exportação
-    setTimeout(() => {
+    try {
+      toast({
+        title: "Exportando relatório",
+        description: `Gerando relatório ${type}...`
+      });
+
+      // Buscar dados completos para exportação
+      const { data: beneficiarias, error: beneficiariasError } = await supabase
+        .from('beneficiarias')
+        .select('*')
+        .gte('data_criacao', getStartDate(period));
+
+      if (beneficiariasError) throw beneficiariasError;
+
+      if (type === 'CSV') {
+        exportToCSV(beneficiarias || []);
+      } else if (type === 'Excel') {
+        exportToExcel(beneficiarias || []);
+      } else if (type === 'PDF') {
+        exportToPDF(beneficiarias || []);
+      }
+
+      logInfo(`Relatório ${type} exportado com sucesso`);
       toast({
         title: "Relatório exportado",
         description: `Relatório ${type} foi gerado com sucesso.`
       });
-    }, 2000);
+    } catch (error) {
+      logError('Erro ao exportar relatório', error);
+      toast({
+        title: "Erro na exportação",
+        description: "Ocorreu um erro ao gerar o relatório.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const exportToCSV = (data: any[]) => {
+    if (data.length === 0) {
+      toast({
+        title: "Sem dados",
+        description: "Não há dados para exportar no período selecionado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const headers = ['Nome', 'CPF', 'Email', 'Telefone', 'Data Cadastro'];
+    const csvContent = [
+      headers.join(','),
+      ...data.map(item => [
+        `"${item.nome_completo || ''}"`,
+        `"${item.cpf || ''}"`,
+        `"${item.email || ''}"`,
+        `"${item.telefone || ''}"`,
+        `"${new Date(item.data_criacao).toLocaleDateString('pt-BR')}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `relatorio_beneficiarias_${period}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const exportToExcel = (data: any[]) => {
+    if (data.length === 0) {
+      toast({
+        title: "Sem dados",
+        description: "Não há dados para exportar no período selecionado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Criar planilha com biblioteca XLSX
+      const worksheet = XLSX.utils.json_to_sheet(
+        data.map(item => ({
+          'Nome Completo': item.nome_completo || '',
+          'CPF': item.cpf || '',
+          'Email': item.email || '',
+          'Telefone': item.telefone || '',
+          'Data de Cadastro': new Date(item.data_criacao).toLocaleDateString('pt-BR'),
+          'Programa/Serviço': item.programa_servico || '',
+          'Status': item.ativo ? 'Ativo' : 'Inativo'
+        }))
+      );
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Beneficiárias');
+
+      // Salvar arquivo
+      const fileName = `relatorio_beneficiarias_${period}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+
+      trackAction('export_excel', { recordCount: data.length, period });
+    } catch (error) {
+      logError('Erro ao exportar Excel', error);
+      throw error;
+    }
+  };
+
+  const exportToPDF = (data: any[]) => {
+    if (data.length === 0) {
+      toast({
+        title: "Sem dados",
+        description: "Não há dados para exportar no período selecionado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Criar PDF com jsPDF
+      const doc = new jsPDF();
+      
+      // Cabeçalho
+      doc.setFontSize(20);
+      doc.text('Relatório de Beneficiárias', 14, 22);
+      
+      doc.setFontSize(12);
+      doc.text(`Período: ${period}`, 14, 32);
+      doc.text(`Data de geração: ${new Date().toLocaleDateString('pt-BR')}`, 14, 40);
+      doc.text(`Total de registros: ${data.length}`, 14, 48);
+      
+      // Tabela
+      const tableColumns = ['Nome', 'CPF', 'Email', 'Telefone', 'Data Cadastro'];
+      const tableRows = data.map(item => [
+        item.nome_completo || '-',
+        item.cpf || '-',
+        item.email || '-',
+        item.telefone || '-',
+        new Date(item.data_criacao).toLocaleDateString('pt-BR')
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumns],
+        body: tableRows,
+        startY: 55,
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        headStyles: {
+          fillColor: [66, 139, 202],
+          textColor: 255,
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+      });
+      
+      // Salvar arquivo
+      const fileName = `relatorio_beneficiarias_${period}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+
+      trackAction('export_pdf', { recordCount: data.length, period });
+    } catch (error) {
+      logError('Erro ao exportar PDF', error);
+      throw error;
+    }
   };
 
   const reports = [
