@@ -1,23 +1,146 @@
-# Guia de Deploy - Sistema Assist Move Assist
-## Deploy em Produção Completo
+# Deploy em Produção - Assist Move Assist
 
-### Índice
-1. [Pré-requisitos](#pré-requisitos)
-2. [Configuração do Supabase](#configuração-do-supabase)
-3. [Configuração do Frontend](#configuração-do-frontend)
-4. [Deploy Vercel/Netlify](#deploy-vercelnetlify)
-5. [Configurações de Produção](#configurações-de-produção)
-6. [Monitoramento](#monitoramento)
-7. [Backup e Segurança](#backup-e-segurança)
-8. [Troubleshooting](#troubleshooting)
+## 🚀 Deploy Automático Completo
+
+Este guia descreve o processo de deploy completamente automatizado para o sistema Assist Move Assist em produção usando Ubuntu 24.04 LTS.
+
+### 🎯 Configuração do Deploy
+
+- **Domínio**: `movemarias.squadsolucoes.com.br`
+- **Sistema**: Ubuntu 24.04 LTS
+- **Super Admin**: `bruno@move.com` / `15002031`
+- **SSL**: Let's Encrypt com renovação automática
+- **Database**: PostgreSQL puro (sem Supabase)
+
+### 📋 Pré-requisitos
+
+1. **Servidor Ubuntu 24.04 LTS** (mínimo 2GB RAM, 20GB disco)
+2. **Domínio configurado** apontando para o IP do servidor
+3. **Acesso root/sudo** no servidor
+4. **Porta 80 e 443** liberadas no firewall
+
+### 🔧 Execução do Deploy
+
+#### 1. Clone o repositório no servidor:
+```bash
+git clone https://github.com/brunonatanaelsr/assist-move-assist.git
+cd assist-move-assist
+```
+
+#### 2. Execute o script de deploy:
+```bash
+chmod +x scripts/deploy-production.sh
+sudo ./scripts/deploy-production.sh
+```
+
+#### 3. Aguarde o processo completo (15-20 minutos)
+
+### 🏗️ O que o script faz automaticamente:
+
+#### **Sistema Base**
+- ✅ Atualiza Ubuntu 24.04
+- ✅ Instala Node.js 20 LTS
+- ✅ Instala PostgreSQL 14+
+- ✅ Instala Nginx
+- ✅ Configura Firewall UFW
+- ✅ Configura Fail2Ban
+
+#### **Banco de Dados**
+- ✅ Cria usuário e banco PostgreSQL
+- ✅ Executa migrações do schema
+- ✅ Cria super administrador
+- ✅ Configura permissões
+
+#### **Backend Node.js**
+- ✅ Instala dependências
+- ✅ Configura variáveis de ambiente
+- ✅ Compila TypeScript
+- ✅ Cria serviço systemd
+- ✅ Inicia automaticamente
+
+#### **Frontend React**
+- ✅ Builda para produção
+- ✅ Configura para API backend
+- ✅ Otimiza assets estáticos
+
+#### **Nginx + SSL**
+- ✅ Configura proxy reverso
+- ✅ Instala certificado SSL
+- ✅ Configura renovação automática
+- ✅ Headers de segurança
+- ✅ Rate limiting
+- ✅ Compressão gzip
+
+### 🔐 Credenciais Geradas
+
+O script gera automaticamente:
+
+- **Usuário PostgreSQL**: `assist_user`
+- **Senha PostgreSQL**: (gerada automaticamente)
+- **JWT Secret**: (gerado automaticamente)
+- **Session Secret**: (gerado automaticamente)
+
+### 👤 Super Administrador
+
+- **Email**: `bruno@move.com`
+- **Senha**: `15002031`
+- **Role**: `admin`
+- **Permissões**: Todas as funcionalidades do sistema
+
+### 🌐 URLs de Acesso
+
+Após o deploy:
+- **Site**: https://movemarias.squadsolucoes.com.br
+- **API**: https://movemarias.squadsolucoes.com.br/api
+- **Health Check**: https://movemarias.squadsolucoes.com.br/health
+
+### 🛠️ Scripts de Manutenção
+
+O deploy cria scripts úteis para manutenção:
+
+#### Status do Sistema
+```bash
+sudo /usr/local/bin/assist-status.sh
+```
+
+#### Health Check Completo
+```bash
+sudo /usr/local/bin/assist-health-check.sh
+```
+
+#### Backup Manual
+```bash
+sudo /usr/local/bin/assist-backup.sh
+```
+
+#### Atualização do Sistema
+```bash
+sudo /workspaces/assist-move-assist/scripts/update-production.sh
+```
+
+### 📊 Monitoramento Automático
+
+#### **Logs**
+- Backend: `journalctl -u assist-move-assist -f`
+- Nginx: `tail -f /var/log/nginx/assist-move-assist-error.log`
+- Sistema: `/var/log/assist-move-assist/`
+
+#### **Backups Automáticos**
+- **Frequência**: Diário às 02:00
+- **Localização**: `/var/backups/assist-move-assist/`
+- **Retenção**: 7 dias
+- **Conteúdo**: Banco de dados + arquivos
+
+#### **SSL Renovação**
+- **Frequência**: Diário às 12:00
+- **Comando**: `certbot renew --quiet`
+- **Reload**: Nginx recarregado automaticamente
 
 ---
 
-## Pré-requisitos
+**✅ Deploy completamente automatizado e pronto para produção!**
 
-### Software Necessário
-- **Node.js** 18+ LTS
-- **npm** ou **bun** (recomendado)
+O sistema está configurado com todas as melhores práticas de segurança, monitoramento e backup automático.
 - **Git**
 - Conta no **Supabase**
 - Conta no **Vercel** ou **Netlify**
