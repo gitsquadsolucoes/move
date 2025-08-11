@@ -37,7 +37,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/usePostgreSQLAuth';
 import { useToast } from '@/components/ui/use-toast';
 import { exportarDados, exportarBeneficiarias, exportarProjetos, exportarOficinas } from '@/utils/exportService';
 

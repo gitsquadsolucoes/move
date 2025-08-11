@@ -6,10 +6,31 @@ interface User {
   name: string;
   email: string;
   role: string;
+  nome_completo?: string;
+  tipo_usuario?: string;
+}
+
+interface Profile {
+  id: string;
+  user_id: string;
+  nome_completo: string;
+  email: string;
+  telefone?: string;
+  cargo?: string;
+  departamento?: string;
+  foto_url?: string;
+  bio?: string;
+  endereco?: string;
+  data_nascimento?: string;
+  tipo_usuario: 'super_admin' | 'admin' | 'coordenador' | 'profissional' | 'assistente';
+  ativo: boolean;
+  data_criacao: string;
+  ultimo_acesso?: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
@@ -33,6 +54,7 @@ interface AuthProviderProps {
 
 export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,7 +64,20 @@ export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }
     
     if (savedUser && savedToken) {
       try {
-        setUser(JSON.parse(savedUser));
+        const user = JSON.parse(savedUser);
+        setUser(user);
+        
+        // Criar profile baseado no user salvo
+        const mockProfile: Profile = {
+          id: user.id.toString(),
+          user_id: user.id.toString(),
+          nome_completo: user.name,
+          email: user.email,
+          tipo_usuario: user.role as any,
+          ativo: true,
+          data_criacao: new Date().toISOString()
+        };
+        setProfile(mockProfile);
       } catch (error) {
         console.error('Error parsing saved user:', error);
         localStorage.removeItem('moveAssistUser');
@@ -62,6 +97,19 @@ export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }
         setUser(response.user);
         localStorage.setItem('moveAssistUser', JSON.stringify(response.user));
         localStorage.setItem('moveAssistToken', response.token);
+        
+        // Criar profile baseado no user
+        const mockProfile: Profile = {
+          id: response.user.id.toString(),
+          user_id: response.user.id.toString(),
+          nome_completo: response.user.name,
+          email: response.user.email,
+          tipo_usuario: response.user.role as any,
+          ativo: true,
+          data_criacao: new Date().toISOString()
+        };
+        setProfile(mockProfile);
+        
         return { error: null };
       } else {
         return { error: { message: response.message || 'Erro ao fazer login' } };
@@ -77,6 +125,7 @@ export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }
   const signOut = async () => {
     try {
       setUser(null);
+      setProfile(null);
       localStorage.removeItem('moveAssistUser');
       localStorage.removeItem('moveAssistToken');
       return { error: null };
@@ -88,6 +137,7 @@ export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }
 
   const value: AuthContextType = {
     user,
+    profile,
     loading,
     signIn,
     signOut,

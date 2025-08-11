@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Save, UserPlus, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/usePostgreSQLAuth';
 import { useBeneficiariaValidation } from '@/hooks/useFormValidation';
 import { DocumentValidator } from '@/lib/validators';
 import { logger } from '@/lib/logger';

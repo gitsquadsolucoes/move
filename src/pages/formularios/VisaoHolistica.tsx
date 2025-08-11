@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Save, Eye, FileText, Loader2, CheckCircle } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/usePostgreSQLAuth';
 
 interface Beneficiaria {
   id: string;

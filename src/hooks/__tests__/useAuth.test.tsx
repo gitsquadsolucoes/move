@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/usePostgreSQLAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 import { renderHook, act } from '@testing-library/react';

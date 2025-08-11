@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/usePostgreSQLAuth";
 import { Badge } from "@/components/ui/badge";
 import NotificationCenter from "@/components/NotificationCenter";
 

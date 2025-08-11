@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, FileText, Receipt, Download, Calendar, User, Loader2, Plus } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/usePostgreSQLAuth';
 import { DocumentDownloadButton } from '@/components/DocumentDownloadButton';
 
 interface Beneficiaria {
