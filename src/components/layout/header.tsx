@@ -15,7 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import NotificationCenter from "@/components/NotificationCenter";
 
 export default function Header() {
-  const { profile, signOut, isAdmin } = useAuth();
+  const { profile, signOut } = useAuth();
+  
+  // Verificar se é admin baseado no profile
+  const isAdmin = profile?.tipo_usuario === 'admin' || profile?.tipo_usuario === 'super_admin';
 
   const handleLogout = async () => {
     await signOut();
