@@ -12,7 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/usePostgreSQLAuth";
 import { Badge } from "@/components/ui/badge";
-import NotificationCenter from "@/components/NotificationCenter";
+import NotificationCenterSimple from "@/components/NotificationCenterSimple";
 
 export default function Header() {
   const { profile, signOut } = useAuth();
@@ -49,7 +49,7 @@ export default function Header() {
       
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <NotificationCenter />
+        <NotificationCenterSimple />
 
         {/* User menu */}
         <DropdownMenu>

@@ -35,17 +35,15 @@ export default function NotificationCenter() {
 
   const loadNotifications = async () => {
     try {
-      const { data, error } = await supabase
-        .from('notificacoes')
-        .select('*')
-        .eq('user_id', profile?.user_id)
-        .order('created_at', { ascending: false })
-        .limit(20);
+      // Implementar API call para notificações
+      const response = await api.get('/notificacoes', {
+        params: { user_id: profile?.user_id }
+      });
 
-      if (error) throw error;
-
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.lida).length || 0);
+      if (response.success) {
+        setNotifications(response.data || []);
+        setUnreadCount(response.data?.filter(n => !n.lida).length || 0);
+      }
     } catch (error) {
       console.error('Erro ao carregar notificações:', error);
     } finally {
@@ -54,22 +52,10 @@ export default function NotificationCenter() {
   };
 
   const subscribeToNotifications = () => {
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notificacoes',
-          filter: `user_id=eq.${profile?.user_id}`
-        },
-        (payload) => {
-          setNotifications(prev => [payload.new as Notification, ...prev.slice(0, 19)]);
-          setUnreadCount(prev => prev + 1);
-        }
-      )
-      .on(
+    // Real-time notifications removidas temporariamente
+    // Implementar WebSocket ou Server-Sent Events posteriormente
+    console.log('Real-time notifications disabled for PostgreSQL mode');
+  };
         'postgres_changes',
         {
           event: 'UPDATE',
@@ -81,29 +67,20 @@ export default function NotificationCenter() {
           setNotifications(prev => 
             prev.map(n => n.id === payload.new.id ? payload.new as Notification : n)
           );
-          if (payload.new.lida && !payload.old.lida) {
-            setUnreadCount(prev => Math.max(0, prev - 1));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+  const subscribeToNotifications = () => {
+    // Real-time notifications removidas temporariamente
+    // Implementar WebSocket ou Server-Sent Events posteriormente
+    console.log('Real-time notifications disabled for PostgreSQL mode');
   };
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('notificacoes')
-        .update({ 
-          lida: true,
-          data_leitura: new Date().toISOString()
-        })
-        .eq('id', notificationId);
+      const response = await api.put(`/notificacoes/${notificationId}`, {
+        lida: true,
+        data_leitura: new Date().toISOString()
+      });
 
-      if (error) throw error;
+      if (!response.success) throw new Error(response.message);
     } catch (error) {
       console.error('Erro ao marcar notificação como lida:', error);
     }
@@ -111,16 +88,11 @@ export default function NotificationCenter() {
 
   const markAllAsRead = async () => {
     try {
-      const { error } = await supabase
-        .from('notificacoes')
-        .update({ 
-          lida: true,
-          data_leitura: new Date().toISOString()
-        })
-        .eq('user_id', profile?.user_id)
-        .eq('lida', false);
+      const response = await api.put('/notificacoes/marcar-todas-lidas', {
+        user_id: profile?.user_id
+      });
 
-      if (error) throw error;
+      if (!response.success) throw new Error(response.message);
 
       setNotifications(prev => prev.map(n => ({ ...n, lida: true })));
       setUnreadCount(0);
