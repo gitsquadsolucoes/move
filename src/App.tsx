@@ -12,7 +12,7 @@ import EditarBeneficiaria from "./pages/EditarBeneficiaria";
 import PAEDIBeneficiaria from "./pages/PAEDIBeneficiaria";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/main-layout";
-import { AuthProvider } from "./hooks/useAuth";
+import AuthProvider from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import AnamneseSocial from "./pages/formularios/AnamneseSocial";
 import FichaEvolucao from "./pages/formularios/FichaEvolucao";
