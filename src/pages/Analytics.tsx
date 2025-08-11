@@ -38,7 +38,7 @@ import {
   Heart,
   Target
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import StatCard from '@/components/ui/stat-card';
 
 interface AnalyticsData {

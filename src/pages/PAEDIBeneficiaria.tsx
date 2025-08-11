@@ -17,7 +17,7 @@ import {
   Plus,
   Edit
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Beneficiaria {

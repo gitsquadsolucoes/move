@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar, FileText, Users, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { BeneficiariaSelection } from '@/components/BeneficiariaSelection';
 import { DocumentDownloadButton } from '@/components/DocumentDownloadButton';
 
