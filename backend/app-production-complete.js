@@ -406,6 +406,534 @@ app.delete("/api/beneficiarias/:id", authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================================================
+// ENDPOINTS PARA PROJETOS
+// ============================================================================
+
+// Listar projetos
+app.get("/api/projetos", authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const result = await pool.query(
+      `SELECT p.*, 
+        COUNT(pa.id) as total_participantes
+       FROM projetos p
+       LEFT JOIN participacoes pa ON p.id = pa.projeto_id
+       WHERE p.ativo = true
+       GROUP BY p.id
+       ORDER BY p.data_criacao DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM projetos WHERE ativo = true'
+    );
+
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(countResult.rows[0].count / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error("Get projetos error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao buscar projetos" 
+    });
+  }
+});
+
+// Criar projeto
+app.post("/api/projetos", authenticateToken, async (req, res) => {
+  try {
+    const {
+      nome,
+      descricao,
+      data_inicio,
+      data_fim,
+      vagas_disponiveis,
+      requisitos,
+      objetivos
+    } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO projetos (
+        nome, descricao, data_inicio, data_fim, 
+        vagas_disponiveis, requisitos, objetivos,
+        criado_por, data_criacao
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) 
+        RETURNING *`,
+      [nome, descricao, data_inicio, data_fim, vagas_disponiveis, requisitos, objetivos, req.user.id]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+      message: "Projeto criado com sucesso"
+    });
+
+  } catch (error) {
+    console.error("Create projeto error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao criar projeto" 
+    });
+  }
+});
+
+// Atualizar projeto
+app.put("/api/projetos/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      nome,
+      descricao,
+      data_inicio,
+      data_fim,
+      vagas_disponiveis,
+      requisitos,
+      objetivos
+    } = req.body;
+
+    const result = await pool.query(
+      `UPDATE projetos SET 
+        nome = $1, descricao = $2, data_inicio = $3, data_fim = $4,
+        vagas_disponiveis = $5, requisitos = $6, objetivos = $7,
+        data_atualizacao = NOW()
+       WHERE id = $8 AND ativo = true
+       RETURNING *`,
+      [nome, descricao, data_inicio, data_fim, vagas_disponiveis, requisitos, objetivos, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Projeto não encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+      message: "Projeto atualizado com sucesso"
+    });
+
+  } catch (error) {
+    console.error("Update projeto error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao atualizar projeto" 
+    });
+  }
+});
+
+// Excluir projeto (soft delete)
+app.delete("/api/projetos/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `UPDATE projetos SET ativo = false, data_atualizacao = NOW() 
+       WHERE id = $1 AND ativo = true
+       RETURNING id`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Projeto não encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Projeto excluído com sucesso'
+    });
+
+  } catch (error) {
+    console.error("Delete projeto error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao excluir projeto" 
+    });
+  }
+});
+
+// ============================================================================
+// ENDPOINTS PARA OFICINAS
+// ============================================================================
+
+// Listar oficinas
+app.get("/api/oficinas", authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const result = await pool.query(
+      `SELECT o.*,
+        COUNT(pa.id) as total_participantes
+       FROM oficinas o
+       LEFT JOIN participacoes pa ON o.id = pa.oficina_id
+       WHERE o.ativo = true
+       GROUP BY o.id
+       ORDER BY o.data_inicio DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM oficinas WHERE ativo = true'
+    );
+
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(countResult.rows[0].count / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error("Get oficinas error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao buscar oficinas" 
+    });
+  }
+});
+
+// Criar oficina
+app.post("/api/oficinas", authenticateToken, async (req, res) => {
+  try {
+    const {
+      nome,
+      descricao,
+      data_inicio,
+      data_fim,
+      horario_inicio,
+      horario_fim,
+      local,
+      instrutor,
+      vagas_totais,
+      ativa = true
+    } = req.body;
+
+    if (!nome || !data_inicio || !horario_inicio || !horario_fim) {
+      return res.status(400).json({ error: "Campos obrigatórios: nome, data_inicio, horario_inicio, horario_fim" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO oficinas (
+        nome, descricao, data_inicio, data_fim, 
+        horario_inicio, horario_fim, local, instrutor,
+        vagas_totais, ativa, criado_por, data_criacao
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) 
+        RETURNING *`,
+      [nome, descricao, data_inicio, data_fim, horario_inicio, horario_fim, local, instrutor, vagas_totais, ativa, req.user.id]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+      message: "Oficina criada com sucesso"
+    });
+
+  } catch (error) {
+    console.error("Create oficina error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao criar oficina" 
+    });
+  }
+});
+
+// Atualizar oficina
+app.put("/api/oficinas/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      nome,
+      descricao,
+      data_inicio,
+      data_fim,
+      horario_inicio,
+      horario_fim,
+      local,
+      instrutor,
+      vagas_totais,
+      ativa
+    } = req.body;
+
+    const result = await pool.query(
+      `UPDATE oficinas SET 
+        nome = $1, descricao = $2, data_inicio = $3, data_fim = $4,
+        horario_inicio = $5, horario_fim = $6, local = $7, instrutor = $8,
+        vagas_totais = $9, ativa = $10, data_atualizacao = NOW()
+      WHERE id = $11 AND ativo = true 
+      RETURNING *`,
+      [nome, descricao, data_inicio, data_fim, horario_inicio, horario_fim, local, instrutor, vagas_totais, ativa, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Oficina não encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+      message: "Oficina atualizada com sucesso"
+    });
+
+  } catch (error) {
+    console.error("Update oficina error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao atualizar oficina" 
+    });
+  }
+});
+
+// Excluir oficina (soft delete)
+app.delete("/api/oficinas/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      'UPDATE oficinas SET ativo = false, data_atualizacao = NOW() WHERE id = $1 AND ativo = true RETURNING *',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Oficina não encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Oficina excluída com sucesso'
+    });
+
+  } catch (error) {
+    console.error("Delete oficina error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao excluir oficina" 
+    });
+  }
+});
+
+// ============================================================================
+// ENDPOINTS PARA ATIVIDADES/PARTICIPAÇÕES
+// ============================================================================
+
+// Listar atividades de uma beneficiária
+app.get("/api/beneficiarias/:id/atividades", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT 
+        p.id,
+        p.data_participacao,
+        p.presente,
+        p.observacoes,
+        COALESCE(proj.nome, of.nome) as atividade_nome,
+        CASE 
+          WHEN proj.id IS NOT NULL THEN 'projeto'
+          WHEN of.id IS NOT NULL THEN 'oficina'
+        END as tipo_atividade
+       FROM participacoes p
+       LEFT JOIN projetos proj ON p.projeto_id = proj.id
+       LEFT JOIN oficinas of ON p.oficina_id = of.id
+       WHERE p.beneficiaria_id = $1
+       ORDER BY p.data_participacao DESC`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+
+  } catch (error) {
+    console.error("Get atividades error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao buscar atividades" 
+    });
+  }
+});
+
+// Criar participação
+app.post("/api/participacoes", authenticateToken, async (req, res) => {
+  try {
+    const {
+      beneficiaria_id,
+      projeto_id,
+      oficina_id,
+      data_participacao,
+      presente = true,
+      observacoes
+    } = req.body;
+
+    if (!beneficiaria_id || (!projeto_id && !oficina_id)) {
+      return res.status(400).json({ 
+        error: "Campos obrigatórios: beneficiaria_id e (projeto_id ou oficina_id)" 
+      });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO participacoes (
+        beneficiaria_id, projeto_id, oficina_id, 
+        data_participacao, presente, observacoes, data_criacao
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW()) 
+        RETURNING *`,
+      [beneficiaria_id, projeto_id, oficina_id, data_participacao || new Date(), presente, observacoes]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+      message: "Participação registrada com sucesso"
+    });
+
+  } catch (error) {
+    console.error("Create participacao error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao registrar participação" 
+    });
+  }
+});
+
+// Atualizar participação
+app.put("/api/participacoes/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { presente, observacoes } = req.body;
+
+    const result = await pool.query(
+      `UPDATE participacoes SET 
+        presente = $1, observacoes = $2, data_atualizacao = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [presente, observacoes, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Participação não encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+      message: "Participação atualizada com sucesso"
+    });
+
+  } catch (error) {
+    console.error("Update participacao error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao atualizar participação" 
+    });
+  }
+});
+
+// ============================================================================
+// ENDPOINTS PARA MENSAGENS
+// ============================================================================
+
+// Listar mensagens
+app.get("/api/mensagens", authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const result = await pool.query(
+      `SELECT m.*, 
+        u.nome as remetente_nome
+       FROM mensagens m
+       LEFT JOIN usuarios u ON m.remetente_id = u.id
+       WHERE m.destinatario_id = $1 OR m.remetente_id = $1
+       ORDER BY m.data_envio DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, limit, offset]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+
+  } catch (error) {
+    console.error("Get mensagens error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao buscar mensagens" 
+    });
+  }
+});
+
+// Enviar mensagem
+app.post("/api/mensagens", authenticateToken, async (req, res) => {
+  try {
+    const {
+      destinatario_id,
+      assunto,
+      conteudo,
+      tipo = 'normal'
+    } = req.body;
+
+    if (!destinatario_id || !conteudo) {
+      return res.status(400).json({ 
+        error: "Campos obrigatórios: destinatario_id, conteudo" 
+      });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO mensagens (
+        remetente_id, destinatario_id, assunto, conteudo, tipo, data_envio
+      ) VALUES ($1, $2, $3, $4, $5, NOW()) 
+        RETURNING *`,
+      [req.user.id, destinatario_id, assunto, conteudo, tipo]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+      message: "Mensagem enviada com sucesso"
+    });
+
+  } catch (error) {
+    console.error("Send mensagem error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Erro ao enviar mensagem" 
+    });
+  }
+});
+
 // Health check
 app.get("/health", async (req, res) => {
   try {

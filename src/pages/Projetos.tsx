@@ -52,16 +52,13 @@ const Projetos = () => {
     try {
       setLoading(true);
       
-      // Verifica se está usando configuração dummy tentando acessar o supabase
-      let isDummyConfig = false;
-      try {
-        await supabase.auth.getSession();
-      } catch (error) {
-        isDummyConfig = true;
-      }
+      // Usar API PostgreSQL
+      const response = await api.getProjetos(1, 50);
       
-      if (isDummyConfig || import.meta.env.VITE_SUPABASE_URL?.includes('dummy')) {
-        // Dados mock para desenvolvimento
+      if (response.success) {
+        setProjetos(response.data || []);
+      } else {
+        // Fallback para dados mock
         const mockProjetos: Projeto[] = [
           {
             id: '1',
