@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { logger } from '@/lib/logger';
+import { logger } from '@/lib/loggerSimple';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -71,16 +71,22 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {process.env.NODE_ENV === 'development' && error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm font-medium text-red-800 mb-1">
-                    Erro (ambiente de desenvolvimento):
-                  </p>
-                  <p className="text-xs text-red-700 font-mono">
-                    {error.message}
-                  </p>
-                </div>
-              )}
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm font-medium text-red-800 mb-1">
+                  Erro detectado:
+                </p>
+                <p className="text-xs text-red-700 font-mono">
+                  {error?.message || 'Erro desconhecido'}
+                </p>
+                {error?.stack && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-red-600 cursor-pointer">Ver stack trace</summary>
+                    <pre className="text-xs text-red-600 mt-1 overflow-auto max-h-40">
+                      {error.stack}
+                    </pre>
+                  </details>
+                )}
+              </div>
               
               <div className="flex gap-2">
                 <Button 
