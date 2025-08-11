@@ -37,26 +37,19 @@ export default function Auth() {
     try {
       console.log('Tentando login com:', { email: loginEmail, password: '***' });
       
-      // Tentar login direto com supabase para debug
-      const { data, error: directError } = await supabase.auth.signInWithPassword({
-        email: loginEmail.trim().toLowerCase(),
-        password: loginPassword,
-      });
+      // Usar API PostgreSQL
+      const { error } = await signIn(loginEmail.trim().toLowerCase(), loginPassword);
 
-      console.log('Resposta do login:', { data, error: directError });
-
-      if (directError) {
-        console.error('Erro direto do Supabase:', directError);
-        setError(`Erro de autenticação: ${directError.message}`);
-      } else if (data.user) {
-        console.log('Login bem-sucedido:', data.user);
-        navigate(from, { replace: true });
+      if (error) {
+        console.error('Erro de login:', error);
+        setError(`Erro de autenticação: ${error.message}`);
       } else {
-        setError('Login falhou sem erro específico');
+        console.log('Login bem-sucedido');
+        navigate(from, { replace: true });
       }
     } catch (err) {
       console.error('Erro inesperado:', err);
-      setError('Erro inesperado. Verifique o console para mais detalhes.');
+      setError('Erro inesperado. Verifique suas credenciais.');
     } finally {
       setIsLoading(false);
     }
@@ -67,34 +60,11 @@ export default function Auth() {
     setError(null);
     
     try {
-      console.log('Criando usuário de teste...');
-      
-      const { data, error } = await supabase.auth.signUp({
-        email: 'bruno@move.com',
-        password: '15002031',
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            nome_completo: 'Bruno Santos',
-            tipo_usuario: 'admin',
-          }
-        }
-      });
-
-      console.log('Resultado da criação:', { data, error });
-
-      if (error) {
-        if (error.message.includes('User already registered')) {
-          setError('Usuário já existe. Tente fazer login.');
-        } else {
-          setError(`Erro ao criar usuário: ${error.message}`);
-        }
-      } else {
-        setError('Usuário criado! Agora tente fazer login.');
-      }
+      console.log('Funcionalidade removida - usuário de teste já existe');
+      setError('Usuário bruno@move.com já existe. Use a senha 15002031.');
     } catch (err) {
-      console.error('Erro ao criar usuário:', err);
-      setError('Erro inesperado ao criar usuário.');
+      console.error('Erro:', err);
+      setError('Erro inesperado.');
     } finally {
       setIsLoading(false);
     }

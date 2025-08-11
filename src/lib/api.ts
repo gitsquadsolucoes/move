@@ -54,10 +54,12 @@ export const api = {
   },
 
   async getBeneficiarias(): Promise<ApiResponse> {
+    const token = localStorage.getItem('auth_token');
     const response = await fetch(`${API_BASE_URL}/beneficiarias`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : '',
       },
     });
     
@@ -65,10 +67,12 @@ export const api = {
   },
 
   async createBeneficiaria(data: any): Promise<ApiResponse> {
+    const token = localStorage.getItem('auth_token');
     const response = await fetch(`${API_BASE_URL}/beneficiarias`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : '',
       },
       body: JSON.stringify(data),
     });
@@ -85,5 +89,32 @@ export const api = {
     });
     
     return response.json();
+  },
+
+  // Auth methods
+  auth: {
+    async login(credentials: { email: string; password: string }): Promise<LoginResponse> {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+      
+      return response.json();
+    },
+
+    async register(userData: { email: string; password: string; nome_completo: string }): Promise<ApiResponse> {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      
+      return response.json();
+    }
   }
 };

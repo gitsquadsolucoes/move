@@ -38,8 +38,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, nomeCompleto: string, tipoUsuario?: 'admin' | 'profissional') => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
-  isAdmin: boolean;
-  isProfissional: boolean;
+  updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
+  loadProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,161 +56,128 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    try {
-      // Verifica se está usando configuração dummy tentando acessar o supabase
-      let isDummyConfig = false;
+  // Check for existing session on mount
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const userData = localStorage.getItem('user_data');
+    
+    if (token && userData) {
       try {
-        await supabase.auth.getSession();
+        const user = JSON.parse(userData);
+        const session = { access_token: token, user };
+        setUser(user);
+        setSession(session);
+        loadProfile();
       } catch (error) {
-        isDummyConfig = true;
+        console.error('Error loading stored session:', error);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
       }
+    }
+    
+    setLoading(false);
+  }, []);
+
+  const loadProfile = async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      // For now, use user data as profile since we don't have a separate profiles table
+      const mockProfile: Profile = {
+        id: session.user.id,
+        user_id: session.user.id,
+        nome_completo: session.user.nome_completo,
+        email: session.user.email,
+        tipo_usuario: 'admin',
+        ativo: true,
+        data_criacao: new Date().toISOString()
+      };
       
-      if (isDummyConfig || import.meta.env.VITE_SUPABASE_URL?.includes('dummy')) {
-        // Dados mock para desenvolvimento - usuário administrador
-        const mockProfile: Profile = {
-          id: userId,
-          user_id: userId,
-          nome_completo: 'Administrador Move Marias',
-          email: 'admin@movemarias.org',
-          telefone: '(11) 99999-0000',
-          cargo: 'Coordenadora Geral',
-          departamento: 'Administração',
-          foto_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b526?w=400',
-          bio: 'Coordenadora responsável pela gestão geral do sistema Move Marias.',
-          endereco: 'São Paulo, SP',
-          data_nascimento: '1985-01-01',
-          tipo_usuario: 'super_admin',
-          ativo: true,
-          data_criacao: new Date().toISOString(),
-          ultimo_acesso: new Date().toISOString()
-        };
-        setProfile(mockProfile);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      if (data) {
-        setProfile({
-          ...data,
-          ativo: (data as any).ativo ?? true,
-          telefone: (data as any).telefone || '',
-          cargo: (data as any).cargo || '',
-          departamento: (data as any).departamento || '',
-          foto_url: (data as any).foto_url || (data as any).avatar_url || '',
-          bio: (data as any).bio || '',
-          endereco: (data as any).endereco || '',
-          data_nascimento: (data as any).data_nascimento || '',
-          ultimo_acesso: (data as any).ultimo_acesso || new Date().toISOString()
-        });
-      }
+      setProfile(mockProfile);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error loading profile:', error);
     }
   };
 
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Fetch profile when user is authenticated
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+  const signUp = async (email: string, password: string, nomeCompleto: string, tipoUsuario: 'admin' | 'profissional' = 'profissional') => {
+    try {
+      // Mock signup - in real implementation, call API
+      const response = await api.auth.register({ email, password, nome_completo: nomeCompleto });
       
-      if (session?.user) {
-        setTimeout(() => {
-          fetchProfile(session.user.id);
-        }, 0);
+      if (response.success) {
+        return { error: null };
+      } else {
+        return { error: new Error(response.message || 'Erro no cadastro') };
       }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signUp = async (
-    email: string, 
-    password: string, 
-    nomeCompleto: string, 
-    tipoUsuario: 'admin' | 'profissional' = 'profissional'
-  ) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          nome_completo: nomeCompleto,
-          tipo_usuario: tipoUsuario,
-        }
-      }
-    });
-
-    return { error };
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    return { error };
+    try {
+      const response = await api.auth.login({ email, password });
+      
+      if (response.success && response.data) {
+        const { token, user } = response.data;
+        
+        // Store session
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('user_data', JSON.stringify(user));
+        
+        const session = { access_token: token, user };
+        setUser(user);
+        setSession(session);
+        
+        await loadProfile();
+        
+        return { error: null };
+      } else {
+        return { error: new Error(response.message || 'Erro no login') };
+      }
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    
-    if (!error) {
+    try {
+      // Clear local storage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      
+      // Clear state
       setUser(null);
       setSession(null);
       setProfile(null);
+      
+      return { error: null };
+    } catch (error) {
+      return { error };
     }
-
-    return { error };
   };
 
-  // Computed values with safe fallbacks
-  const isAdmin = profile?.tipo_usuario === 'admin' || profile?.tipo_usuario === 'super_admin' || false;
-  const isProfissional = profile?.tipo_usuario === 'profissional' || false;
+  const updateProfile = async (updates: Partial<Profile>) => {
+    try {
+      if (!profile) return { error: new Error('No profile loaded') };
+      
+      // Mock update - in real implementation, call API
+      const updatedProfile = { ...profile, ...updates };
+      setProfile(updatedProfile);
+      
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
 
-  const value: AuthContextType = {
+  const value = {
     user,
     session,
     profile,
@@ -218,8 +185,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signIn,
     signOut,
-    isAdmin,
-    isProfissional,
+    updateProfile,
+    loadProfile
   };
 
   return (
@@ -228,3 +195,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;
