@@ -28,7 +28,19 @@ export default function Dashboard() {
       
       // Buscar dados das beneficiárias via API PostgreSQL
       const response = await api.getBeneficiarias();
-      const beneficiarias = response.data || [];
+      console.log('Dashboard - resposta da API:', response);
+      
+      // A API retorna { beneficiarias: [...], pagination: {...} }
+      let beneficiarias = [];
+      if ((response as any).beneficiarias) {
+        beneficiarias = (response as any).beneficiarias;
+      } else if (response.data && Array.isArray(response.data)) {
+        beneficiarias = response.data;
+      } else if (response.success && response.data) {
+        beneficiarias = response.data;
+      }
+      
+      console.log('Dashboard - beneficiárias processadas:', beneficiarias);
       const totalBeneficiarias = beneficiarias.length;
 
       // Simular dados até implementarmos as outras tabelas
