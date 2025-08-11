@@ -75,10 +75,10 @@ export const checkDbConnection = async () => {
       idleConnections: pool.idleCount,
       waitingCount: pool.waitingCount
     };
-  } catch (error) {
+  } catch (error: any) {
     return { 
       success: false, 
-      error: error.message,
+      error: error?.message || 'Erro desconhecido',
       totalConnections: pool.totalCount,
       idleConnections: pool.idleCount,
       waitingCount: pool.waitingCount
@@ -96,7 +96,7 @@ export const executeQuery = async (text: string, params?: any[]) => {
       const result = await client.query(text, params);
       client.release();
       return result;
-    } catch (error) {
+    } catch (error: any) {
       retries--;
       console.error(`Erro na query (tentativas restantes: ${retries}):`, error);
       
@@ -108,6 +108,18 @@ export const executeQuery = async (text: string, params?: any[]) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
+  
+  // Fallback - nunca deve chegar aqui
+  throw new Error('Falha ao executar query após múltiplas tentativas');
+};
+
+// Wrapper para compatibilidade com código existente
+export const db = {
+  query: async (text: string, params?: any[]) => {
+    const result = await executeQuery(text, params);
+    return result?.rows || [];
+  },
+  pool
 };
 
 // Inicializar ao importar o módulo
