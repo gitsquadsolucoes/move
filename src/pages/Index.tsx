@@ -1,4 +1,4 @@
-import Dashboard from "./Dashboard";
+import Dashboard from "./DashboardPostgreSQL";
 
 export default function Index() {
   // The route protection is handled in App.tsx

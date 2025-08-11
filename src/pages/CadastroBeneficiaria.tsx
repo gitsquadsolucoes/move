@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Save, UserPlus, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function CadastroBeneficiaria() {
@@ -83,33 +83,22 @@ export default function CadastroBeneficiaria() {
         nis: formData.nis || null,
         referencia: formData.referencia || null,
         programa_servico: formData.programa_servico || null,
-        created_by: profile?.id,
-        updated_by: profile?.id
       };
 
-      const { data, error } = await supabase
-        .from('beneficiarias')
-        .insert([cleanData])
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          setError('Este CPF já está cadastrado no sistema');
-        } else {
-          setError(`Erro ao cadastrar beneficiária: ${error.message}`);
-        }
-        return;
-      }
+      const data = await api.createBeneficiaria(cleanData);
 
       setSuccess(true);
       setTimeout(() => {
         navigate('/beneficiarias');
       }, 2000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao cadastrar beneficiária:', error);
-      setError('Erro interno. Tente novamente.');
+      if (error.message?.includes('CPF já existe')) {
+        setError('Este CPF já está cadastrado no sistema');
+      } else {
+        setError(`Erro ao cadastrar beneficiária: ${error.message || 'Erro interno'}`);
+      }
     } finally {
       setLoading(false);
     }

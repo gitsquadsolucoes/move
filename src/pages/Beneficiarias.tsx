@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 interface Beneficiaria {
   id: string;
@@ -58,75 +58,10 @@ export default function Beneficiarias() {
     try {
       setLoading(true);
       
-      // Verifica se está usando configuração dummy tentando acessar o supabase
-      let isDummyConfig = false;
-      try {
-        await supabase.auth.getSession();
-      } catch (error) {
-        isDummyConfig = true;
-      }
-      
-      if (isDummyConfig) {
-        // Dados mock para desenvolvimento
-        const mockBeneficiarias: Beneficiaria[] = [
-          {
-            id: '15b2ce99-7a8c-4111-ab5b-7556e4f545ba',
-            nome_completo: 'Maria Silva Santos',
-            cpf: '123.456.789-00',
-            idade: 35,
-            programa_servico: 'Assistência Social',
-            data_inicio_instituto: '2024-01-15',
-            contato1: '(11) 98765-4321',
-            data_criacao: new Date().toISOString()
-          },
-          {
-            id: '25c3de89-8b9d-5222-bc6c-8667f5f646cb',
-            nome_completo: 'Ana Paula Oliveira',
-            cpf: '987.654.321-00',
-            idade: 28,
-            programa_servico: 'Educação Profissional',
-            data_inicio_instituto: '2024-02-10',
-            contato1: '(11) 97654-3210',
-            data_criacao: new Date().toISOString()
-          },
-          {
-            id: '36d4ef90-9c0e-6333-cd7d-9778g6g757dc',
-            nome_completo: 'Carla Fernandes Lima',
-            cpf: '456.789.123-00',
-            idade: 42,
-            programa_servico: 'Capacitação Técnica',
-            data_inicio_instituto: '2024-01-20',
-            contato1: '(11) 96543-2109',
-            data_criacao: new Date().toISOString()
-          }
-        ];
-        
-        setBeneficiarias(mockBeneficiarias);
-        const total = mockBeneficiarias.length;
-        const ativas = mockBeneficiarias.filter(b => getBeneficiariaStatus(b) === "Ativa").length;
-        const aguardando = mockBeneficiarias.filter(b => getBeneficiariaStatus(b) === "Aguardando").length;
-        const inativas = mockBeneficiarias.filter(b => getBeneficiariaStatus(b) === "Inativa").length;
-        
-        setStats({
-          total,
-          ativas,
-          aguardando,
-          inativas
-        });
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('beneficiarias')
-        .select('*')
-        .order('data_criacao', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao carregar beneficiárias:', error);
-        return;
-      }
-
-      setBeneficiarias(data || []);
+      // Buscar dados das beneficiárias via API PostgreSQL
+      const response = await api.getBeneficiarias();
+      const data = response.data || [];
+      setBeneficiarias(data);
       
       // Calculate stats with dynamic status
       const total = data?.length || 0;
@@ -142,6 +77,52 @@ export default function Beneficiarias() {
       });
     } catch (error) {
       console.error('Erro ao carregar beneficiárias:', error);
+      // Em caso de erro, usar dados mock
+      const mockBeneficiarias: Beneficiaria[] = [
+        {
+          id: '15b2ce99-7a8c-4111-ab5b-7556e4f545ba',
+          nome_completo: 'Maria Silva Santos',
+          cpf: '123.456.789-00',
+          idade: 35,
+          programa_servico: 'Assistência Social',
+          data_inicio_instituto: '2024-01-15',
+          contato1: '(11) 98765-4321',
+          data_criacao: new Date().toISOString()
+        },
+        {
+          id: '25c3de89-8b9d-5222-bc6c-8667f5f646cb',
+          nome_completo: 'Ana Paula Oliveira',
+          cpf: '987.654.321-00',
+          idade: 28,
+          programa_servico: 'Educação Profissional',
+          data_inicio_instituto: '2024-02-10',
+          contato1: '(11) 97654-3210',
+          data_criacao: new Date().toISOString()
+        },
+        {
+          id: '36d4ef90-9c0e-6333-cd7d-9778g6g757dc',
+          nome_completo: 'Carla Fernandes Lima',
+          cpf: '456.789.123-00',
+          idade: 42,
+          programa_servico: 'Capacitação Técnica',
+          data_inicio_instituto: '2024-01-20',
+          contato1: '(11) 96543-2109',
+          data_criacao: new Date().toISOString()
+        }
+      ];
+      
+      setBeneficiarias(mockBeneficiarias);
+      const total = mockBeneficiarias.length;
+      const ativas = mockBeneficiarias.filter(b => getBeneficiariaStatus(b) === "Ativa").length;
+      const aguardando = mockBeneficiarias.filter(b => getBeneficiariaStatus(b) === "Aguardando").length;
+      const inativas = mockBeneficiarias.filter(b => getBeneficiariaStatus(b) === "Inativa").length;
+      
+      setStats({
+        total,
+        ativas,
+        aguardando,
+        inativas
+      });
     } finally {
       setLoading(false);
     }
