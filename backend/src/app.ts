@@ -5,12 +5,10 @@ import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
 import dotenv from 'dotenv';
 
-import { authRoutes } from './routes/auth';
 import { apiRoutes } from './routes/api';
-import { setupWebSocket } from './routes/websocket';
+import { initializeWebSocket } from './services/websocket';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './services/logger';
 
@@ -19,7 +17,6 @@ dotenv.config();
 
 const app = express();
 const server = createServer(app);
-const wss = new WebSocketServer({ server });
 
 // Middleware de segurança
 app.use(helmet());
@@ -56,11 +53,10 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);
 
 // WebSocket setup
-setupWebSocket(wss);
+initializeWebSocket(server);
 
 // Error handling
 app.use(errorHandler);
