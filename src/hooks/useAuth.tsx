@@ -127,6 +127,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (response.success && response.user && response.token) {
         const userWithName = {
           ...response.user,
+          id: String(response.user.id), // Convert to string
           nome_completo: response.user.name || response.user.email
         };
         

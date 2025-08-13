@@ -1,5 +1,4 @@
 import { logger } from './logger';
-import { SessionManager } from './sessionManager';
 
 // Sistema de inicialização da aplicação para produção
 class AppInitializer {
