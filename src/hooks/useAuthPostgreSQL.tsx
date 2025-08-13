@@ -124,15 +124,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const response = await api.auth.login({ email, password });
       
-      if (response.success && response.data) {
-        const { token, user } = response.data;
+      if (response.success && response.user && response.token) {
+        const userWithName = {
+          ...response.user,
+          nome_completo: response.user.name || response.user.email
+        };
         
         // Store session
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_data', JSON.stringify(user));
+        localStorage.setItem('auth_token', response.token);
+        localStorage.setItem('user_data', JSON.stringify(userWithName));
         
-        const session = { access_token: token, user };
-        setUser(user);
+        const session = { access_token: response.token, user: userWithName };
+        setUser(userWithName);
         setSession(session);
         
         await loadProfile();

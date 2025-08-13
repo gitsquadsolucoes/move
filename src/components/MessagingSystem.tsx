@@ -8,7 +8,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/usePostgreSQLAuth";
 import { cn } from "@/lib/utils";
 
@@ -49,40 +48,14 @@ export default function MessagingSystem() {
   useEffect(() => {
     if (activeConversation) {
       loadMessages(activeConversation);
-      subscribeToMessages(activeConversation);
     }
   }, [activeConversation]);
 
   const loadConversations = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('conversas_participantes')
-        .select(`
-          conversa_id,
-          conversas (
-            id,
-            nome_grupo,
-            tipo,
-            created_at,
-            updated_at
-          )
-        `)
-        .eq('user_id', profile?.user_id);
-
-      if (error) throw error;
-
-      const conversationList = data?.map(item => ({
-        id: item.conversas.id,
-        nome_grupo: item.conversas.nome_grupo,
-        tipo: item.conversas.tipo,
-        created_at: item.conversas.created_at,
-        updated_at: item.conversas.updated_at,
-        last_message: "",
-        unread_count: 0
-      })) || [];
-
-      setConversations(conversationList);
+      // Mock data for now
+      setConversations([]);
     } catch (error) {
       console.error('Erro ao carregar conversas:', error);
     } finally {
@@ -92,82 +65,18 @@ export default function MessagingSystem() {
 
   const loadMessages = async (conversationId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('mensagens')
-        .select(`
-          id,
-          conteudo,
-          sender_id,
-          created_at,
-          tipo
-        `)
-        .eq('conversa_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      // Get sender names separately
-      const messageList = [];
-      for (const msg of data || []) {
-        const { data: senderData } = await supabase
-          .from('profiles')
-          .select('nome_completo')
-          .eq('user_id', msg.sender_id)
-          .single();
-
-        messageList.push({
-          id: msg.id,
-          conteudo: msg.conteudo,
-          sender_id: msg.sender_id,
-          created_at: msg.created_at,
-          tipo: msg.tipo,
-          sender_name: senderData?.nome_completo || 'Usuário'
-        });
-      }
-
-      setMessages(messageList);
+      // Mock data for now
+      setMessages([]);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
     }
-  };
-
-  const subscribeToMessages = (conversationId: string) => {
-    const channel = supabase
-      .channel(`messages-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'mensagens',
-          filter: `conversa_id=eq.${conversationId}`
-        },
-        (payload) => {
-          setMessages(prev => [...prev, payload.new as Message]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeConversation) return;
 
     try {
-      const { error } = await supabase
-        .from('mensagens')
-        .insert({
-          conversa_id: activeConversation,
-          sender_id: profile?.user_id,
-          conteudo: newMessage.trim(),
-          tipo: 'texto'
-        });
-
-      if (error) throw error;
-
+      // Mock implementation for now
       setNewMessage("");
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);

@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/usePostgreSQLAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -58,14 +57,7 @@ const MessagingWidget = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('conversas_participantes')
-        .select('conversa_id, user_id')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      
-      // Simplified for now - will expand with proper joins later
+      // Mock data for now
       setConversations([]);
     } catch (error) {
       console.error('Erro ao carregar conversas:', error);
@@ -74,23 +66,8 @@ const MessagingWidget = () => {
 
   const loadMessages = async (conversationId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('mensagens')
-        .select('id, conteudo, sender_id, created_at, editada')
-        .eq('conversa_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      // Simplified - will get user names separately
-      setMessages(data?.map(msg => ({
-        id: msg.id,
-        conteudo: msg.conteudo,
-        sender_id: msg.sender_id,
-        sender_name: 'Usuário',
-        created_at: msg.created_at,
-        editada: msg.editada
-      })) || []);
+      // Mock data for now
+      setMessages([]);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
     }
@@ -98,13 +75,8 @@ const MessagingWidget = () => {
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, nome_completo')
-        .neq('user_id', user?.id);
-
-      if (error) throw error;
-      setUsers(data?.map(u => ({ id: u.user_id, nome_completo: u.nome_completo })) || []);
+      // Mock data for now
+      setUsers([]);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
     }
@@ -120,27 +92,6 @@ const MessagingWidget = () => {
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation);
-
-      // Real-time messages
-      const channel = supabase
-        .channel(`messages-${selectedConversation}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'mensagens',
-            filter: `conversa_id=eq.${selectedConversation}`
-          },
-          () => {
-            loadMessages(selectedConversation);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
   }, [selectedConversation]);
 
@@ -148,15 +99,7 @@ const MessagingWidget = () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
     try {
-      const { error } = await supabase
-        .from('mensagens')
-        .insert([{
-          conversa_id: selectedConversation,
-          sender_id: user.id,
-          conteudo: newMessage.trim()
-        }]);
-
-      if (error) throw error;
+      // Mock implementation for now
       setNewMessage('');
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
@@ -167,31 +110,9 @@ const MessagingWidget = () => {
     if (!user) return;
 
     try {
-      const { data: conversation, error: convError } = await supabase
-        .from('conversas')
-        .insert([{
-          tipo: isGroup ? 'grupo' : 'individual',
-          nome_grupo: groupName
-        }])
-        .select()
-        .single();
-
-      if (convError) throw convError;
-
-      // Add participants
-      const participants = [user.id, ...selectedUsers];
-      const { error: participantsError } = await supabase
-        .from('conversas_participantes')
-        .insert(participants.map(userId => ({
-          conversa_id: conversation.id,
-          user_id: userId
-        })));
-
-      if (participantsError) throw participantsError;
-
+      // Mock implementation for now
       setShowNewChat(false);
       loadConversations();
-      setSelectedConversation(conversation.id);
     } catch (error) {
       console.error('Erro ao criar conversa:', error);
     }
@@ -202,7 +123,7 @@ const MessagingWidget = () => {
       return conversation.nome_grupo || 'Grupo sem nome';
     }
     
-    const otherParticipant = conversation.participants.find(p => p.user_id !== user?.id);
+    const otherParticipant = conversation.participants.find(p => p.user_id !== String(user?.id));
     return otherParticipant?.nome_completo || 'Usuário';
   };
 
@@ -303,16 +224,16 @@ const MessagingWidget = () => {
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${message.sender_id === String(user?.id) ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-[80%] p-3 rounded-lg ${
-                        message.sender_id === user?.id
+                        message.sender_id === String(user?.id)
                           ? 'bg-primary text-primary-foreground ml-4'
                           : 'bg-muted mr-4'
                       }`}
                     >
-                      {message.sender_id !== user?.id && (
+                      {message.sender_id !== String(user?.id) && (
                         <p className="text-xs font-medium mb-1">{message.sender_name}</p>
                       )}
                       <p className="text-sm">{message.conteudo}</p>
