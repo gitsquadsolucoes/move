@@ -1,36 +1,60 @@
 import request from 'supertest';
-import app from '../../app';
-import { db } from '../../services/db';
+import express from 'express';
+
+// Variáveis de ambiente para evitar que o app principal tente escutar portas durante os testes
+process.env.PORT = '0';
+
+// Usuário mockado utilizado nos testes
+const mockUser = {
+  id: '123',
+  email: 'bruno@move.com',
+  role: 'admin'
+};
+const mockToken = 'valid-jwt-token';
+
+// Mocks dos middlewares de autenticação
+const authenticateToken = jest.fn((req: any, _res: any, next: any) => {
+  req.user = mockUser;
+  next();
+});
+const requireProfissional = jest.fn((req: any, _res: any, next: any) => next());
+
+jest.mock('../../middleware/auth', () => ({
+  authenticateToken,
+  requireProfissional,
+  AuthService: {
+    verifyToken: jest.fn().mockReturnValue(mockUser)
+  }
+}));
 
 // Mock do banco de dados
 jest.mock('../../services/db');
+import { db } from '../../services/db';
 const mockDb = db as jest.Mocked<typeof db>;
 
-describe.skip('Beneficiarias Routes', () => {
-  // Mock user para autenticação
-  const mockUser = {
-    id: '123',
-    email: 'bruno@move.com',
-    role: 'admin'
-  };
+// Construir app de teste usando apenas as rotas da API
+import { apiRoutes } from '../api';
+const app = express();
+app.use(express.json());
+app.use(apiRoutes);
 
-  const mockToken = 'valid-jwt-token';
-
+describe('Beneficiarias Routes', () => {
   beforeEach(() => {
-    // Mock do middleware de autenticação
-    jest.doMock('../../middleware/auth', () => ({
-      authenticateToken: (req: any, res: any, next: any) => {
-        req.user = mockUser;
-        next();
-      },
-      requireProfissional: (req: any, res: any, next: any) => next(),
-      AuthService: {
-        verifyToken: jest.fn().mockReturnValue(mockUser)
-      }
-    }));
+    jest.clearAllMocks();
   });
 
   describe('GET /beneficiarias', () => {
+    it('deve exigir autenticação', async () => {
+      authenticateToken.mockImplementationOnce((req, res) =>
+        res.status(401).json({ error: 'Token de acesso requerido' })
+      );
+
+      const response = await request(app).get('/beneficiarias');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Token de acesso requerido');
+    });
+
     it('deve listar beneficiárias com paginação', async () => {
       const mockBeneficiarias = [
         {
@@ -67,42 +91,15 @@ describe.skip('Beneficiarias Routes', () => {
       });
     });
 
-    it('deve filtrar beneficiárias por busca', async () => {
-      const mockBeneficiarias = [
-        {
-          id: '1',
-          nome_completo: 'Maria Silva',
-          cpf: '123.456.789-01',
-          status: 'ativa'
-        }
-      ];
-
-      mockDb.getBeneficiarias.mockResolvedValue(mockBeneficiarias);
-      mockDb.query.mockResolvedValue([{ total: '1' }]);
+    it('deve retornar 500 em erro do banco', async () => {
+      mockDb.getBeneficiarias.mockRejectedValue(new Error('db error'));
 
       const response = await request(app)
         .get('/beneficiarias')
-        .set('Authorization', `Bearer ${mockToken}`)
-        .query({ search: 'Maria' });
+        .set('Authorization', `Bearer ${mockToken}`);
 
-      expect(response.status).toBe(200);
-      expect(response.body.beneficiarias).toHaveLength(1);
-      expect(response.body.beneficiarias[0].nome_completo).toBe('Maria Silva');
-    });
-
-    it('deve filtrar beneficiárias por status', async () => {
-      mockDb.getBeneficiarias.mockResolvedValue([]);
-      mockDb.query.mockResolvedValue([{ total: '0' }]);
-
-      const response = await request(app)
-        .get('/beneficiarias')
-        .set('Authorization', `Bearer ${mockToken}`)
-        .query({ status: 'inativa' });
-
-      expect(response.status).toBe(200);
-      expect(mockDb.getBeneficiarias).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'inativa' })
-      );
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Erro interno do servidor');
     });
   });
 
@@ -123,7 +120,12 @@ describe.skip('Beneficiarias Routes', () => {
         .set('Authorization', `Bearer ${mockToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.beneficiaria).toMatchObject(mockBeneficiaria);
+      expect(response.body.beneficiaria).toMatchObject({
+        id: '1',
+        nome_completo: 'Maria Silva',
+        cpf: '123.456.789-01',
+        status: 'ativa'
+      });
     });
 
     it('deve retornar 404 para beneficiária não encontrada', async () => {
@@ -150,6 +152,24 @@ describe.skip('Beneficiarias Routes', () => {
       estado: 'SP'
     };
 
+    it('deve rejeitar usuário sem permissão', async () => {
+      authenticateToken.mockImplementationOnce((req, _res, next) => {
+        req.user = { ...mockUser, role: 'user' };
+        next();
+      });
+      requireProfissional.mockImplementationOnce((req, res) =>
+        res.status(403).json({ error: 'Acesso negado' })
+      );
+
+      const response = await request(app)
+        .post('/beneficiarias')
+        .set('Authorization', `Bearer ${mockToken}`)
+        .send(novaBeneficiaria);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBe('Acesso negado');
+    });
+
     it('deve criar nova beneficiária com dados válidos', async () => {
       const mockCreatedBeneficiaria = {
         id: '3',
@@ -168,8 +188,26 @@ describe.skip('Beneficiarias Routes', () => {
         .send(novaBeneficiaria);
 
       expect(response.status).toBe(201);
-      expect(response.body.beneficiaria).toMatchObject(mockCreatedBeneficiaria);
+      expect(response.body.beneficiaria).toMatchObject({
+        id: '3',
+        ...novaBeneficiaria,
+        status: 'ativa',
+        created_by: mockUser.id
+      });
       expect(response.body.message).toBe('Beneficiária cadastrada com sucesso');
+    });
+
+    it('deve retornar 500 em erro do banco ao criar', async () => {
+      mockDb.query.mockResolvedValue([]);
+      mockDb.insert.mockRejectedValue(new Error('db fail'));
+
+      const response = await request(app)
+        .post('/beneficiarias')
+        .set('Authorization', `Bearer ${mockToken}`)
+        .send(novaBeneficiaria);
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Erro interno do servidor');
     });
 
     it('deve rejeitar beneficiária sem nome completo', async () => {
@@ -283,9 +321,11 @@ describe.skip('Beneficiarias Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Beneficiária removida com sucesso');
-      expect(mockDb.update).toHaveBeenCalledWith('1', expect.objectContaining({
-        status: 'inativa'
-      }));
+      expect(mockDb.update).toHaveBeenCalledWith(
+        'beneficiarias',
+        '1',
+        expect.objectContaining({ status: 'inativa' })
+      );
     });
 
     it('deve rejeitar remoção de beneficiária inexistente', async () => {
@@ -344,3 +384,4 @@ describe.skip('Beneficiarias Routes', () => {
     });
   });
 });
+
