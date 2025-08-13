@@ -514,7 +514,7 @@ export default function ParticipantesProjeto() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
                       <Link to={`/beneficiarias/${participante.beneficiaria_id}`}>
-                        <Eye className="h-4 w-4 mr-2" />
+                        <UserCheck className="h-4 w-4 mr-2" />
                         Ver Perfil
                       </Link>
                     </DropdownMenuItem>
