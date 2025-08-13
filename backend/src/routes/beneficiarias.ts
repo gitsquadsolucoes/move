@@ -1,5 +1,5 @@
 import express from 'express';
-import { db } from '../config/database';
+import { db } from '../services/db';
 import { authenticateToken, requireProfissional, AuthenticatedRequest } from '../middleware/auth';
 import { loggerService } from '../services/logger';
 
