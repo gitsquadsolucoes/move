@@ -13,8 +13,8 @@ export default function PostgreSQLAuth() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   
-  const [loginEmail, setLoginEmail] = useState('admin@movemarias.com');
-  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   
   const { signIn, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -131,11 +131,9 @@ export default function PostgreSQLAuth() {
             </form>
 
             <div className="mt-6 text-center">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-sm text-yellow-800">
-                  <strong>Credenciais padrão:</strong><br />
-                  Email: admin@movemarias.com<br />
-                  Senha: admin123
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  Entre com suas credenciais para acessar o sistema
                 </p>
               </div>
             </div>

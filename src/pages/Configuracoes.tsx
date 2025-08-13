@@ -1,5 +1,4 @@
-  \
-  import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,8 +35,8 @@ import {
   CheckCircle,
   AlertTriangle
 } from 'lucide-react';
-import { api } from '@/lib/api';
-import { useAuth } from '@/hooks/usePostgreSQLAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 
 interface UserProfile {
@@ -64,93 +63,24 @@ interface UserPermission {
   user_name: string;
 }
 
-interface SystemConfig {
-  id: string;
-  chave: string;
-  valor: string;
-  descricao: string;
-  tipo: 'string' | 'number' | 'boolean' | 'json';
-}
+const Configuracoes: React.FC = () => {
+  const { profile, user } = useAuth();
+  const { toast } = useToast();
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [permissions, setPermissions] = useState<UserPermission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showPermissionForm, setShowPermissionForm] = useState(false);
 
-// Mock data para desenvolvimento
-const mockUsers: UserProfile[] = [
-  {
-    id: '1',
-    user_id: '1',
-    nome_completo: 'Ana Silva Santos',
-    email: 'ana.santos@movemarias.org',
-    telefone: '(11) 99999-1111',
-    cargo: 'Coordenadora Geral',
-    departamento: 'Coordenação',
-    foto_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b526?w=400',
-    bio: 'Coordenadora com 8 anos de experiência em projetos sociais.',
-    tipo_usuario: 'super_admin',
-    ativo: true,
-    data_criacao: '2024-01-01',
-    ultimo_acesso: '2024-08-07'
-  },
-  {
-    id: '2',
-    user_id: '2',
-    nome_completo: 'Maria Oliveira',
-    email: 'maria.oliveira@movemarias.org',
-    telefone: '(11) 99999-2222',
-    cargo: 'Assistente Social',
-    departamento: 'Atendimento',
-    foto_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
-    bio: 'Assistente social especializada em acompanhamento familiar.',
-    tipo_usuario: 'profissional',
-    ativo: true,
-    data_criacao: '2024-02-01',
-    ultimo_acesso: '2024-08-06'
-  },
-  {
-    id: '3',
-    user_id: '3',
-    nome_completo: 'Carlos Roberto',
-    email: 'carlos.roberto@movemarias.org',
-    telefone: '(11) 99999-3333',
-    cargo: 'Coordenador de Projetos',
-    departamento: 'Projetos',
-    foto_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400',
-    bio: 'Responsável pela gestão e coordenação de projetos sociais.',
-    tipo_usuario: 'coordenador',
-    ativo: true,
-    data_criacao: '2024-03-01',
-    ultimo_acesso: '2024-08-05'
-  }
-];
+  const isAdmin = profile?.tipo_usuario === 'admin' || profile?.tipo_usuario === 'super_admin';
 
-const mockPermissions: UserPermission[] = [
-  { id: '1', user_id: '1', module: 'beneficiarias', permission: 'admin', user_name: 'Ana Silva Santos' },
-  { id: '2', user_id: '1', module: 'oficinas', permission: 'admin', user_name: 'Ana Silva Santos' },
-  { id: '3', user_id: '1', module: 'projetos', permission: 'admin', user_name: 'Ana Silva Santos' },
-  { id: '4', user_id: '1', module: 'usuarios', permission: 'admin', user_name: 'Ana Silva Santos' },
-  { id: '5', user_id: '2', module: 'beneficiarias', permission: 'write', user_name: 'Maria Oliveira' },
-  { id: '6', user_id: '2', module: 'formularios', permission: 'write', user_name: 'Maria Oliveira' },
-  { id: '7', user_id: '3', module: 'oficinas', permission: 'admin', user_name: 'Carlos Roberto' },
-  { id: '8', user_id: '3', module: 'projetos', permission: 'admin', user_name: 'Carlos Roberto' }
-];
-
-const mockSystemConfig: SystemConfig[] = [
-  { id: '1', chave: 'nome_organizacao', valor: 'Move Marias', descricao: 'Nome da organização', tipo: 'string' },
-  { id: '2', chave: 'email_organizacao', valor: 'contato@movemarias.org', descricao: 'Email oficial', tipo: 'string' },
-  { id: '3', chave: 'telefone_organizacao', valor: '(11) 3333-4444', descricao: 'Telefone oficial', tipo: 'string' },
-  { id: '4', chave: 'endereco_organizacao', valor: 'Rua das Flores, 123', descricao: 'Endereço da sede', tipo: 'string' },
-  { id: '5', chave: 'max_beneficiarias', valor: '1000', descricao: 'Máximo de beneficiárias', tipo: 'number' },
-  { id: '6', chave: 'backup_automatico', valor: 'true', descricao: 'Backup automático habilitado', tipo: 'boolean' },
-  { id: '7', chave: 'notificacoes_email', valor: 'true', descricao: 'Notificações por email', tipo: 'boolean' }
-];
-
-const modules = [
-  { value: 'beneficiarias', label: 'Beneficiárias', icon: Users },
-  { value: 'formularios', label: 'Formulários', icon: FileText },
-  { value: 'oficinas', label: 'Oficinas', icon: Users },
-  { value: 'projetos', label: 'Projetos', icon: Users },
-  { value: 'relatorios', label: 'Relatórios', icon: FileText },
-  { value: 'usuarios', label: 'Usuários', icon: Users },
-  { value: 'configuracoes', label: 'Configurações', icon: Settings }
-];
+  const modules = [
+    { value: 'beneficiarias', label: 'Beneficiárias', icon: Users },
+    { value: 'formularios', label: 'Formulários', icon: FileText },
+    { value: 'oficinas', label: 'Oficinas', icon: Users },
+    { value: 'projetos', label: 'Projetos', icon: Users },
+    { value: 'relatorios', label: 'Relatórios', icon: FileText },
+    { value: 'usuarios', label: 'Usuários', icon: Users },
+    { value: 'configuracoes', label: 'Configurações', icon: Settings }
   ];
 
   const permissionTypes = [
@@ -211,6 +141,8 @@ const modules = [
   useEffect(() => {
     if (isAdmin) {
       Promise.all([loadUsers(), loadPermissions()]).finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, [isAdmin]);
 

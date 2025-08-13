@@ -160,7 +160,6 @@ const mockPosts: Post[] = [
             return 0;
           }
         });
-        });
         
         setPosts(sortedPosts);
         return;
