@@ -57,7 +57,7 @@ export default defineConfig({
 
   // Start the application automatically for both local runs and CI.
   webServer: {
-    command: `npm run build && npm run preview -- --port ${PORT}`,
+    command: `bash -c "npm run build && npm run preview -- --port ${PORT} & pid=\\$!; npx wait-on http://127.0.0.1:${PORT} -t 180000 && wait \\$pid"`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180000,
