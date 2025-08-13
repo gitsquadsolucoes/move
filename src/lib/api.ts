@@ -5,8 +5,24 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-const apiFetch = (url: string, options: RequestInit = {}) => {
-  return fetch(url, { credentials: 'include', ...options });
+const apiFetch = async <T = any>(url: string, options: RequestInit = {}): Promise<T> => {
+  try {
+    const response = await fetch(url, { credentials: 'include', ...options });
+    let data: any = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+    if (!response.ok) {
+      const message = data?.message || data?.error || response.statusText;
+      throw new Error(message);
+    }
+    return data as T;
+  } catch (error: any) {
+    const message = error?.message || 'Network error';
+    throw new Error(message);
+  }
 };
 
 interface LoginResponse {
@@ -29,246 +45,302 @@ interface ApiResponse<T = any> {
 
 export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<LoginResponse>(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async getBeneficiarias(): Promise<ApiResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/beneficiarias`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse>(`${API_BASE_URL}/beneficiarias`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async createBeneficiaria(data: any): Promise<ApiResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/beneficiarias`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse>(`${API_BASE_URL}/beneficiarias`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async testConnection(): Promise<ApiResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/test-db`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse>(`${API_BASE_URL}/test-db`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   // Projetos
   async getProjetos(page = 1, limit = 10): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/projetos?page=${page}&limit=${limit}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(
+        `${API_BASE_URL}/projetos?page=${page}&limit=${limit}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async createProjeto(data: any): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/projetos`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/projetos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async updateProjeto(id: string, data: any): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/projetos/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/projetos/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async deleteProjeto(id: string): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/projetos/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/projetos/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   // Oficinas
   async getOficinas(page = 1, limit = 10): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/oficinas?page=${page}&limit=${limit}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(
+        `${API_BASE_URL}/oficinas?page=${page}&limit=${limit}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async createOficina(data: any): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/oficinas`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/oficinas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async updateOficina(id: string, data: any): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/oficinas/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/oficinas/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async deleteOficina(id: string): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/oficinas/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/oficinas/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   // Atividades
   async getAtividades(beneficiariaId: string): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/beneficiarias/${beneficiariaId}/atividades`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(
+        `${API_BASE_URL}/beneficiarias/${beneficiariaId}/atividades`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async createParticipacao(data: any): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/participacoes`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/participacoes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async updateParticipacao(id: string, data: any): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/participacoes/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/participacoes/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   // Mensagens
   async getMensagens(page = 1, limit = 20): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/mensagens?page=${page}&limit=${limit}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(
+        `${API_BASE_URL}/mensagens?page=${page}&limit=${limit}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   async sendMensagem(data: any): Promise<ApiResponse<any>> {
-    const response = await apiFetch(`${API_BASE_URL}/mensagens`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    return response.json();
+    try {
+      return await apiFetch<ApiResponse<any>>(`${API_BASE_URL}/mensagens`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
   },
 
   // Auth methods
   auth: {
     async login(credentials: { email: string; password: string }): Promise<LoginResponse> {
-      const response = await apiFetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      return response.json();
+      try {
+        return await apiFetch<LoginResponse>(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+        });
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      }
     },
 
     async register(userData: { email: string; password: string; nome_completo: string }): Promise<ApiResponse> {
-      const response = await apiFetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      return response.json();
+      try {
+        return await apiFetch<ApiResponse>(`${API_BASE_URL}/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        });
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      }
     },
 
     async logout(): Promise<void> {
-      await apiFetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST'
-      });
+      try {
+        await apiFetch(`${API_BASE_URL}/auth/logout`, {
+          method: 'POST',
+        });
+      } catch (error: any) {
+        throw new Error(error.message);
+      }
     },
 
     async getProfile(): Promise<ApiResponse> {
-      const response = await apiFetch(`${API_BASE_URL}/auth/profile`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      return response.json();
+      try {
+        return await apiFetch<ApiResponse>(`${API_BASE_URL}/auth/profile`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      }
     }
   }
 };
