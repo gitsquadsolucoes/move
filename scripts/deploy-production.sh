@@ -239,7 +239,7 @@ cd $FRONTEND_DIR
 
 # Atualizar configurações do frontend para produção
 cat > .env.production << EOF
-VITE_API_URL=https://$DOMAIN/api
+VITE_API_BASE_URL=https://$DOMAIN/api
 VITE_WS_URL=wss://$DOMAIN/ws
 VITE_APP_URL=https://$DOMAIN
 EOF

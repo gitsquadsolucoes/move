@@ -1,22 +1,6 @@
 // Frontend API client para comunicação com o backend PostgreSQL
 const getApiBaseUrl = () => {
-  // Detectar ambiente baseado no hostname e protocolo
-  if (typeof window !== 'undefined') {
-    const { hostname, protocol } = window.location;
-    
-    // Produção
-    if (hostname === 'movemarias.squadsolucoes.com.br') {
-      return `${protocol}//movemarias.squadsolucoes.com.br/api`;
-    }
-    
-    // Desenvolvimento local
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('codespaces')) {
-      return 'http://localhost:3000/api';
-    }
-  }
-  
-  // Fallback para desenvolvimento
-  return 'http://localhost:3000/api';
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

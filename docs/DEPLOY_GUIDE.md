@@ -311,6 +311,9 @@ VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua_chave_publica_supabase
 VITE_SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role
 
+# API
+VITE_API_BASE_URL=https://seu-dominio/api
+
 # Opcional: Monitoramento
 VITE_SENTRY_DSN=https://sua-chave@sentry.io/projeto
 VITE_LOGROCKET_APP_ID=seu-app-id
@@ -398,6 +401,7 @@ vercel --prod
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "env": {
+    "VITE_API_BASE_URL": "@vite_api_base_url",
     "VITE_SUPABASE_URL": "@vite_supabase_url",
     "VITE_SUPABASE_ANON_KEY": "@vite_supabase_anon_key"
   },
@@ -439,6 +443,7 @@ vercel --prod
 # Via CLI
 vercel env add VITE_SUPABASE_URL production
 vercel env add VITE_SUPABASE_ANON_KEY production
+vercel env add VITE_API_BASE_URL production
 
 # Ou via Dashboard: vercel.com > Project > Settings > Environment Variables
 ```
@@ -453,6 +458,7 @@ vercel env add VITE_SUPABASE_ANON_KEY production
 
 [build.environment]
   NODE_VERSION = "18"
+  VITE_API_BASE_URL = "https://seu-dominio/api"
 
 [[redirects]]
   from = "/*"

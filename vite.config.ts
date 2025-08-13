@@ -1,14 +1,19 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { componentTagger } from 'lovable-tagger';
 
-export default defineConfig(({ mode }) => ({
-  plugins: [
-    react(),
-    mode === 'development' && componentTagger(),
-  ].filter(Boolean),
-  build: {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  return {
+    plugins: [
+      react(),
+      mode === 'development' && componentTagger(),
+    ].filter(Boolean),
+    define: {
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL),
+    },
+    build: {
     // Otimizações de build
     target: 'es2015',
     minify: 'terser',
@@ -63,23 +68,24 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000, // 1MB de aviso
     sourcemap: process.env.NODE_ENV === 'development'
   },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src')
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, './src'),
+      },
     },
-  },
-  server: {
-    port: 8080,
-    host: true, // Permite acesso externo
-    strictPort: true
-  },
-  preview: {
-    port: 8080,
-    host: true
-  },
-  // Otimizações de desenvolvimento
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
-    exclude: ['@vite/client', '@vite/env']
-  }
-}));
+    server: {
+      port: 8080,
+      host: true, // Permite acesso externo
+      strictPort: true,
+    },
+    preview: {
+      port: 8080,
+      host: true,
+    },
+    // Otimizações de desenvolvimento
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-router-dom'],
+      exclude: ['@vite/client', '@vite/env'],
+    },
+  };
+});
