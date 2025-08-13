@@ -10,7 +10,7 @@ import Beneficiarias from "./pages/Beneficiarias";
 import CadastroBeneficiaria from "./pages/CadastroBeneficiaria";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/main-layout";
-import AuthProvider from "./hooks/useAuth";
+import { PostgreSQLAuthProvider } from "./hooks/usePostgreSQLAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Analytics from "./pages/Analytics";
 import Oficinas from "./pages/Oficinas";
@@ -28,7 +28,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AuthProvider>
+        <PostgreSQLAuthProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
@@ -105,7 +105,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-        </AuthProvider>
+        </PostgreSQLAuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>
