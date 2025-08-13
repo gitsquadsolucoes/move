@@ -15,9 +15,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Em desenvolvimento com configurações dummy, permita acesso sem autenticação
-  const isDevelopmentMode = import.meta.env.VITE_SUPABASE_URL?.includes('dummy') || 
-                           import.meta.env.VITE_SUPABASE_ANON_KEY === 'dummy-anon-key';
+  // Em desenvolvimento ou com backend local, permita acesso sem autenticação
+  const isDevelopmentMode =
+    import.meta.env.DEV ||
+    import.meta.env.VITE_API_BASE_URL?.includes('localhost');
 
   useEffect(() => {
     if (!loading && !isDevelopmentMode) {
