@@ -10,22 +10,12 @@ export default function DebugDashboard() {
       try {
         console.log('=== DEBUG DASHBOARD ===');
         
-        // Verificar se tem token
-        const token = localStorage.getItem('auth_token');
-        console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
-        
-        if (token) {
-          console.log('Token preview:', token.substring(0, 50) + '...');
-        }
-
         // Testar API
         console.log('Testando API...');
         const response = await api.getBeneficiarias();
         console.log('Resposta da API:', response);
-        
+
         setDebug({
-          hasToken: !!token,
-          tokenPreview: token ? token.substring(0, 50) + '...' : 'N/A',
           apiResponse: response,
           dataType: typeof response.data,
           dataIsArray: Array.isArray(response.data),

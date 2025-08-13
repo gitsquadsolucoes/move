@@ -58,47 +58,42 @@ export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se há um usuário logado no localStorage
-    const savedUser = localStorage.getItem('moveAssistUser');
-    const savedToken = localStorage.getItem('moveAssistToken');
-    
-    if (savedUser && savedToken) {
+    const load = async () => {
       try {
-        const user = JSON.parse(savedUser);
-        setUser(user);
-        
-        // Criar profile baseado no user salvo
-        const mockProfile: Profile = {
-          id: user.id.toString(),
-          user_id: user.id.toString(),
-          nome_completo: user.name,
-          email: user.email,
-          tipo_usuario: user.role as any,
-          ativo: true,
-          data_criacao: new Date().toISOString()
-        };
-        setProfile(mockProfile);
+        const response = await api.auth.getProfile();
+        if (response.user) {
+          const user = response.user as any;
+          setUser(user);
+
+          const mockProfile: Profile = {
+            id: user.id.toString(),
+            user_id: user.id.toString(),
+            nome_completo: user.nome_completo || user.email,
+            email: user.email,
+            tipo_usuario: user.role as any,
+            ativo: true,
+            data_criacao: new Date().toISOString()
+          };
+          setProfile(mockProfile);
+        }
       } catch (error) {
-        console.error('Error parsing saved user:', error);
-        localStorage.removeItem('moveAssistUser');
-        localStorage.removeItem('moveAssistToken');
+        console.error('Error loading user:', error);
+      } finally {
+        setLoading(false);
       }
-    }
-    
-    setLoading(false);
+    };
+
+    load();
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
       const response = await api.login(email, password);
-      
-      if (response.success && response.user && response.token) {
+
+      if (response.success && response.user) {
         setUser(response.user);
-        localStorage.setItem('moveAssistUser', JSON.stringify(response.user));
-        localStorage.setItem('moveAssistToken', response.token);
-        
-        // Criar profile baseado no user
+
         const mockProfile: Profile = {
           id: response.user.id.toString(),
           user_id: response.user.id.toString(),
@@ -109,7 +104,7 @@ export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }
           data_criacao: new Date().toISOString()
         };
         setProfile(mockProfile);
-        
+
         return { error: null };
       } else {
         return { error: { message: response.message || 'Erro ao fazer login' } };
@@ -124,10 +119,9 @@ export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }
 
   const signOut = async () => {
     try {
+      await api.auth.logout();
       setUser(null);
       setProfile(null);
-      localStorage.removeItem('moveAssistUser');
-      localStorage.removeItem('moveAssistToken');
       return { error: null };
     } catch (error) {
       console.error('Logout error:', error);
