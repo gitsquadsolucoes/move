@@ -1,10 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Assist Move Assist - E2E Tests', () => {
-  const baseURL = 'https://movemarias.squadsolucoes.com.br';
-  
+  // Sempre navega utilizando o baseURL configurado no playwright.config.ts
   test.beforeEach(async ({ page }) => {
-    await page.goto(baseURL);
+    await page.goto('/');
   });
 
   test('deve carregar página inicial', async ({ page }) => {
@@ -215,14 +214,13 @@ test.describe('Assist Move Assist - E2E Tests', () => {
     }
   });
 
-  test('deve validar SSL e segurança', async ({ page }) => {
-    // Verificar se está usando HTTPS
-    expect(page.url()).toMatch(/^https:/);
-    
-    // Verificar headers de segurança
-    const response = await page.goto(baseURL);
+  test('deve validar SSL e segurança', async ({ page, baseURL }) => {
+    // Em ambientes locais (HTTP) este teste não é aplicável
+    test.skip(baseURL?.startsWith('http://'), 'SSL não disponível em ambiente local');
+
+    const response = await page.goto('/');
     const headers = response?.headers();
-    
+
     expect(headers?.['strict-transport-security']).toBeTruthy();
     expect(headers?.['x-content-type-options']).toBe('nosniff');
     expect(headers?.['x-frame-options']).toBeTruthy();
