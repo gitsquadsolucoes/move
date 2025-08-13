@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client'
-import PostgreSQLApp from './PostgreSQLApp.tsx'
+import App from './App.tsx'
 import './index.css'
 
-createRoot(document.getElementById("root")!).render(<PostgreSQLApp />);
+createRoot(document.getElementById("root")!).render(<App />);
