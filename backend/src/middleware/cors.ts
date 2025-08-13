@@ -1,4 +1,5 @@
 import cors from 'cors';
+import { logger } from '../services/logger';
 
 const allowedOrigins = [
   'http://movemarias.squadsolucoes.com.br',
@@ -20,7 +21,7 @@ export const corsMiddleware = cors({
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.error(`CORS bloqueou origem: ${origin}`);
+      logger.error(`CORS bloqueou origem: ${origin}`);
       callback(new Error('Bloqueado pelo CORS - Origem não autorizada'));
     }
   },
