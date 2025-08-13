@@ -4,6 +4,13 @@ import { loggerService } from '../services/logger';
 
 const router = express.Router();
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'strict' as const,
+  maxAge: 24 * 60 * 60 * 1000, // 1 dia
+};
+
 // POST /auth/login
 router.post('/login', async (req: express.Request, res: express.Response) => {
   try {
@@ -23,10 +30,11 @@ router.post('/login', async (req: express.Request, res: express.Response) => {
       });
     }
 
+    res.cookie('auth_token', result.token, COOKIE_OPTIONS);
+
     res.json({
       message: 'Login realizado com sucesso',
-      user: result.user,
-      token: result.token
+      user: result.user
     });
   } catch (error) {
     loggerService.error('Erro no endpoint de login:', error);
@@ -69,10 +77,11 @@ router.post('/register', async (req: express.Request, res: express.Response) => 
       role
     });
 
+    res.cookie('auth_token', result.token, COOKIE_OPTIONS);
+
     res.status(201).json({
       message: 'Usuário registrado com sucesso',
-      user: result.user,
-      token: result.token
+      user: result.user
     });
   } catch (error: any) {
     loggerService.error('Erro no endpoint de registro:', error);
@@ -180,9 +189,10 @@ router.post('/refresh-token', authenticateToken, async (req: AuthenticatedReques
       role: req.user!.role
     });
 
+    res.cookie('auth_token', newToken, COOKIE_OPTIONS);
+
     res.json({
-      message: 'Token renovado com sucesso',
-      token: newToken
+      message: 'Token renovado com sucesso'
     });
   } catch (error) {
     loggerService.error('Erro ao renovar token:', error);
@@ -192,11 +202,11 @@ router.post('/refresh-token', authenticateToken, async (req: AuthenticatedReques
   }
 });
 
-// POST /auth/logout (opcional - para logs de auditoria)
-router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res: express.Response) => {
+// POST /auth/logout
+router.post('/logout', async (req: express.Request, res: express.Response) => {
   try {
-    loggerService.audit('LOGOUT', req.user!.id);
-    
+    res.clearCookie('auth_token', COOKIE_OPTIONS);
+
     res.json({
       message: 'Logout realizado com sucesso'
     });

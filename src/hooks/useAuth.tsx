@@ -32,7 +32,6 @@ interface Profile {
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, nomeCompleto: string, tipoUsuario?: 'admin' | 'profissional') => Promise<{ error: any }>;
@@ -64,24 +63,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Check for existing session on mount
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const userData = localStorage.getItem('user_data');
-    
-    if (token && userData) {
+    const checkSession = async () => {
       try {
-        const user = JSON.parse(userData);
-        const session = { access_token: token, user };
-        setUser(user);
-        setSession(session);
-        loadProfile();
+        const response = await api.auth.getProfile();
+        if (response.user) {
+          const userWithName = {
+            ...response.user,
+            id: String(response.user.id),
+            nome_completo: response.user.nome_completo || response.user.email
+          };
+          setUser(userWithName);
+          setSession({ access_token: '', user: userWithName });
+          await loadProfile();
+        }
       } catch (error) {
-        console.error('Error loading stored session:', error);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
+        console.error('Error loading session:', error);
+      } finally {
+        setLoading(false);
       }
-    }
-    
-    setLoading(false);
+    };
+
+    checkSession();
   }, []);
 
   const loadProfile = async () => {
@@ -123,24 +125,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signIn = async (email: string, password: string) => {
     try {
       const response = await api.auth.login({ email, password });
-      
-      if (response.success && response.user && response.token) {
+
+      if (response.success && response.user) {
         const userWithName = {
           ...response.user,
           id: String(response.user.id), // Convert to string
           nome_completo: response.user.name || response.user.email
         };
-        
-        // Store session
-        localStorage.setItem('auth_token', response.token);
-        localStorage.setItem('user_data', JSON.stringify(userWithName));
-        
-        const session = { access_token: response.token, user: userWithName };
+
+        const sessionData = { access_token: '', user: userWithName };
         setUser(userWithName);
-        setSession(session);
-        
+        setSession(sessionData);
+
         await loadProfile();
-        
+
         return { error: null };
       } else {
         return { error: new Error(response.message || 'Erro no login') };
@@ -152,15 +150,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signOut = async () => {
     try {
-      // Clear local storage
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_data');
-      
+      await api.auth.logout();
+
       // Clear state
       setUser(null);
       setSession(null);
       setProfile(null);
-      
+
       return { error: null };
     } catch (error) {
       return { error };
@@ -183,7 +179,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const value = {
     user,
-    session,
     profile,
     loading,
     signUp,

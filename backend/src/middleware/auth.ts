@@ -225,7 +225,23 @@ export class AuthService {
 // Middleware de autenticação
 export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  let token: string | undefined;
+
+  // Tentar extrair token do cookie "auth_token"
+  const cookieHeader = req.headers.cookie;
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').map(c => c.trim());
+    const authCookie = cookies.find(c => c.startsWith('auth_token='));
+    if (authCookie) {
+      token = decodeURIComponent(authCookie.split('=')[1]);
+    }
+  }
+
+  // Fallback para header Authorization
+  if (!token && authHeader) {
+    token = authHeader.split(' ')[1]; // Bearer TOKEN
+  }
 
   if (!token) {
     return res.status(401).json({ error: 'Token de acesso requerido' });

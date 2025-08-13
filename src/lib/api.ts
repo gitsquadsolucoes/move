@@ -5,6 +5,10 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+const apiFetch = (url: string, options: RequestInit = {}) => {
+  return fetch(url, { credentials: 'include', ...options });
+};
+
 interface LoginResponse {
   success: boolean;
   user?: {
@@ -13,7 +17,6 @@ interface LoginResponse {
     email: string;
     role: string;
   };
-  token?: string;
   message?: string;
 }
 
@@ -26,7 +29,7 @@ interface ApiResponse<T = any> {
 
 export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await apiFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -38,12 +41,10 @@ export const api = {
   },
 
   async getBeneficiarias(): Promise<ApiResponse> {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/beneficiarias`, {
+    const response = await apiFetch(`${API_BASE_URL}/beneficiarias`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
       },
     });
     
@@ -51,12 +52,10 @@ export const api = {
   },
 
   async createBeneficiaria(data: any): Promise<ApiResponse> {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/beneficiarias`, {
+    const response = await apiFetch(`${API_BASE_URL}/beneficiarias`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
       },
       body: JSON.stringify(data),
     });
@@ -65,7 +64,7 @@ export const api = {
   },
 
   async testConnection(): Promise<ApiResponse> {
-    const response = await fetch(`${API_BASE_URL}/test-db`, {
+    const response = await apiFetch(`${API_BASE_URL}/test-db`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -77,12 +76,10 @@ export const api = {
 
   // Projetos
   async getProjetos(page = 1, limit = 10): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/projetos?page=${page}&limit=${limit}`, {
+    const response = await apiFetch(`${API_BASE_URL}/projetos?page=${page}&limit=${limit}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
     });
     
@@ -90,12 +87,10 @@ export const api = {
   },
 
   async createProjeto(data: any): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/projetos`, {
+    const response = await apiFetch(`${API_BASE_URL}/projetos`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -104,12 +99,10 @@ export const api = {
   },
 
   async updateProjeto(id: string, data: any): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/projetos/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/projetos/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -118,12 +111,10 @@ export const api = {
   },
 
   async deleteProjeto(id: string): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/projetos/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/projetos/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
     });
     
@@ -132,12 +123,10 @@ export const api = {
 
   // Oficinas
   async getOficinas(page = 1, limit = 10): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/oficinas?page=${page}&limit=${limit}`, {
+    const response = await apiFetch(`${API_BASE_URL}/oficinas?page=${page}&limit=${limit}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
     });
     
@@ -145,12 +134,10 @@ export const api = {
   },
 
   async createOficina(data: any): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/oficinas`, {
+    const response = await apiFetch(`${API_BASE_URL}/oficinas`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -159,12 +146,10 @@ export const api = {
   },
 
   async updateOficina(id: string, data: any): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/oficinas/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/oficinas/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -173,12 +158,10 @@ export const api = {
   },
 
   async deleteOficina(id: string): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/oficinas/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/oficinas/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
     });
     
@@ -187,12 +170,10 @@ export const api = {
 
   // Atividades
   async getAtividades(beneficiariaId: string): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/beneficiarias/${beneficiariaId}/atividades`, {
+    const response = await apiFetch(`${API_BASE_URL}/beneficiarias/${beneficiariaId}/atividades`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
     });
     
@@ -200,12 +181,10 @@ export const api = {
   },
 
   async createParticipacao(data: any): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/participacoes`, {
+    const response = await apiFetch(`${API_BASE_URL}/participacoes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -214,12 +193,10 @@ export const api = {
   },
 
   async updateParticipacao(id: string, data: any): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/participacoes/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/participacoes/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -229,12 +206,10 @@ export const api = {
 
   // Mensagens
   async getMensagens(page = 1, limit = 20): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/mensagens?page=${page}&limit=${limit}`, {
+    const response = await apiFetch(`${API_BASE_URL}/mensagens?page=${page}&limit=${limit}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
     });
     
@@ -242,12 +217,10 @@ export const api = {
   },
 
   async sendMensagem(data: any): Promise<ApiResponse<any>> {
-    const token = localStorage.getItem('moveAssistToken');
-    const response = await fetch(`${API_BASE_URL}/mensagens`, {
+    const response = await apiFetch(`${API_BASE_URL}/mensagens`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -258,26 +231,43 @@ export const api = {
   // Auth methods
   auth: {
     async login(credentials: { email: string; password: string }): Promise<LoginResponse> {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await apiFetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
       });
-      
+
       return response.json();
     },
 
     async register(userData: { email: string; password: string; nome_completo: string }): Promise<ApiResponse> {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await apiFetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(userData),
       });
-      
+
+      return response.json();
+    },
+
+    async logout(): Promise<void> {
+      await apiFetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST'
+      });
+    },
+
+    async getProfile(): Promise<ApiResponse> {
+      const response = await apiFetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
       return response.json();
     }
   }
