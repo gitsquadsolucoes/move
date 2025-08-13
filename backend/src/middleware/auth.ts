@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
-import { db } from '../config/database';
+import { db } from '../services/db';
 import { loggerService } from '../services/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';

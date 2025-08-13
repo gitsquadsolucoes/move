@@ -1,9 +1,9 @@
 import request from 'supertest';
 import app from '../../app';
-import { db } from '../../config/database';
+import { db } from '../../services/db';
 
 // Mock do banco de dados
-jest.mock('../../config/database');
+jest.mock('../../services/db');
 const mockDb = db as jest.Mocked<typeof db>;
 
 describe('Beneficiarias Routes', () => {
