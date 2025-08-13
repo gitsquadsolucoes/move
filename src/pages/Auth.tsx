@@ -55,21 +55,6 @@ export default function Auth() {
     }
   };
 
-  const createTestUser = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log('Funcionalidade removida - usuário de teste já existe');
-      setError('Usuário bruno@move.com já existe. Use a senha 15002031.');
-    } catch (err) {
-      console.error('Erro:', err);
-      setError('Erro inesperado.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   if (user) {
     return null; // Will be redirected by useEffect
   }
@@ -149,17 +134,6 @@ export default function Auth() {
               )}
             </Button>
           </form>
-          
-          <div className="mt-4">
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={createTestUser}
-              disabled={isLoading}
-            >
-              Criar Usuário de Teste (Debug)
-            </Button>
-          </div>
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>Credenciais padrão:</p>
