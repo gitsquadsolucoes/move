@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import { logger } from '../services/logger';
 
 dotenv.config();
 
@@ -31,16 +32,16 @@ const pool = new Pool({
 });
 
 // Evento para monitorar conexões
-pool.on('connect', (client) => {
-  console.log('Nova conexão PostgreSQL estabelecida');
+pool.on('connect', () => {
+  logger.info('Nova conexão PostgreSQL estabelecida');
 });
 
-pool.on('error', (err, client) => {
-  console.error('Erro inesperado no pool PostgreSQL:', err);
+pool.on('error', (err) => {
+  logger.error('Erro inesperado no pool PostgreSQL:', err);
 });
 
-pool.on('remove', (client) => {
-  console.log('Conexão PostgreSQL removida do pool');
+pool.on('remove', () => {
+  logger.info('Conexão PostgreSQL removida do pool');
 });
 
 // Teste de conexão ao iniciar
@@ -49,11 +50,11 @@ const initializeDatabase = async () => {
     const client = await pool.connect();
     const result = await client.query('SELECT NOW(), version()');
     client.release();
-    console.log('✅ Conexão PostgreSQL estabelecida com sucesso');
-    console.log('📅 Hora do servidor:', result.rows[0].now);
-    console.log('🗄️ Versão PostgreSQL:', result.rows[0].version.split(' ')[0]);
+    logger.info('✅ Conexão PostgreSQL estabelecida com sucesso');
+    logger.info('📅 Hora do servidor:', result.rows[0].now);
+    logger.info('🗄️ Versão PostgreSQL:', result.rows[0].version.split(' ')[0]);
   } catch (err) {
-    console.error('❌ Erro ao conectar ao PostgreSQL:', err);
+    logger.error('❌ Erro ao conectar ao PostgreSQL:', err);
     process.exit(1);
   }
 };
@@ -98,7 +99,7 @@ export const executeQuery = async (text: string, params?: any[]) => {
       return result;
     } catch (error: any) {
       retries--;
-      console.error(`Erro na query (tentativas restantes: ${retries}):`, error);
+      logger.error(`Erro na query (tentativas restantes: ${retries}):`, error);
       
       if (retries === 0) {
         throw error;
