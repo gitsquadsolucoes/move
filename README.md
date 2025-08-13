@@ -71,3 +71,18 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Environment variables
+
+This project relies on environment variables for configuration. For local development, copy `.env.example` to `.env` and fill in the required values:
+
+```sh
+cp .env.example .env
+```
+
+In production, **do not commit `.env` files**. Instead, supply secrets through your deployment platform or a secret manager:
+
+- **Docker secrets** – create secrets with `docker secret create` and reference them in your `docker-compose.yml`.
+- **Vault** or similar services – store key/value pairs and inject them at runtime.
+
+These approaches keep sensitive values out of version control while still making them available to the application.
