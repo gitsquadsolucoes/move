@@ -29,15 +29,30 @@ export default function Auth() {
     }
   }, [user, navigate, from]);
 
+  const { validatePassword, checkRateLimit, resetAttempts, isBlocked } = usePasswordValidation();
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
+    // Verifica o rate limit
+    const { canAttempt, timeToWait } = checkRateLimit();
+    if (!canAttempt) {
+      const minutes = Math.ceil(timeToWait / 60000);
+      setError(`Muitas tentativas. Tente novamente em ${minutes} minutos.`);
+      return;
+    }
+
+    // Valida a senha
+    const validation = validatePassword(loginPassword);
+    if (!validation.isValid) {
+      setError(validation.errors.join('. '));
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      console.log('Tentando login com:', { email: loginEmail, password: '***' });
-      
-      // Usar API PostgreSQL
       const { error } = await signIn(loginEmail.trim().toLowerCase(), loginPassword);
 
       if (error) {
@@ -45,6 +60,7 @@ export default function Auth() {
         setError(`Erro de autenticação: ${error.message}`);
       } else {
         console.log('Login bem-sucedido');
+        resetAttempts(); // Reseta as tentativas após login bem-sucedido
         navigate(from, { replace: true });
       }
     } catch (err) {
@@ -95,7 +111,16 @@ export default function Auth() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                <Button 
+                  variant="link" 
+                  className="px-0" 
+                  onClick={() => navigate('/recuperar-senha')}
+                >
+                  Esqueceu a senha?
+                </Button>
+              </div>
               <div className="relative">
                 <Input
                   id="password"

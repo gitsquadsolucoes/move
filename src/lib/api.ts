@@ -1,11 +1,11 @@
 // Frontend API client para comunicação com o backend PostgreSQL
-const getApiBaseUrl = () => {
+export const getApiBaseUrl = () => {
   return import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 };
 
-const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
 
-const apiFetch = async <T = any>(url: string, options: RequestInit = {}): Promise<T> => {
+export const apiFetch = async <T = any>(url: string, options: RequestInit = {}): Promise<T> => {
   try {
     const response = await fetch(url, { credentials: 'include', ...options });
     let data: any = null;
@@ -14,10 +14,32 @@ const apiFetch = async <T = any>(url: string, options: RequestInit = {}): Promis
     } catch {
       data = null;
     }
+
+    // Se o token expirou, tenta renovar
+    if (response.status === 401 && url !== `${API_BASE_URL}/auth/refresh` && url !== `${API_BASE_URL}/auth/login`) {
+      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (refreshResponse.ok) {
+        // Tenta a requisição original novamente
+        const retryResponse = await fetch(url, { credentials: 'include', ...options });
+        const retryData = await retryResponse.json();
+        
+        if (!retryResponse.ok) {
+          throw new Error(retryData?.message || retryData?.error || retryResponse.statusText);
+        }
+        
+        return retryData as T;
+      }
+    }
+
     if (!response.ok) {
       const message = data?.message || data?.error || response.statusText;
       throw new Error(message);
     }
+
     return data as T;
   } catch (error: any) {
     const message = error?.message || 'Network error';
@@ -306,6 +328,48 @@ export const api = {
       }
     },
 
+    async requestPasswordReset(email: string): Promise<ApiResponse> {
+      try {
+        return await apiFetch<ApiResponse>(`${API_BASE_URL}/auth/request-reset`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        });
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      }
+    },
+
+    async verifyResetCode(email: string, code: string): Promise<ApiResponse> {
+      try {
+        return await apiFetch<ApiResponse>(`${API_BASE_URL}/auth/verify-code`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, code }),
+        });
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      }
+    },
+
+    async resetPassword(email: string, code: string, newPassword: string): Promise<ApiResponse> {
+      try {
+        return await apiFetch<ApiResponse>(`${API_BASE_URL}/auth/reset-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, code, newPassword }),
+        });
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      }
+    },
+
     async register(userData: { email: string; password: string; nome_completo: string }): Promise<ApiResponse> {
       try {
         return await apiFetch<ApiResponse>(`${API_BASE_URL}/auth/register`, {
@@ -341,6 +405,77 @@ export const api = {
       } catch (error: any) {
         return { success: false, message: error.message };
       }
+    }
+  },
+
+  // Formulários
+  async getFormulario(tipo: string): Promise<ApiResponse> {
+    try {
+      return await apiFetch<ApiResponse>(`${API_BASE_URL}/formularios/${tipo}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  async salvarFormulario(tipo: string, data: any): Promise<ApiResponse> {
+    try {
+      return await apiFetch<ApiResponse>(`${API_BASE_URL}/formularios/${tipo}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  // Relatórios
+  async gerarRelatorio(tipo: string, dataInicio: string, dataFim: string): Promise<ApiResponse> {
+    try {
+      return await apiFetch<ApiResponse>(`${API_BASE_URL}/relatorios/${tipo}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dataInicio, dataFim }),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  // Feed
+  async getPosts(): Promise<ApiResponse> {
+    try {
+      return await apiFetch<ApiResponse>(`${API_BASE_URL}/posts`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  async createPost(data: { conteudo: string; imagem?: string }): Promise<ApiResponse> {
+    try {
+      return await apiFetch<ApiResponse>(`${API_BASE_URL}/posts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error: any) {
+      return { success: false, message: error.message };
     }
   }
 };

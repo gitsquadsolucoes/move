@@ -12,106 +12,104 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/usePostgreSQLAuth';
 import { useToast } from '@/components/ui/use-toast';
 
-interface Oficina {
+interface Projeto {
   id: string;
   nome: string;
   descricao: string;
-  instrutor: string;
+  coordenador: string;
   data_inicio: string;
   data_fim?: string;
-  horario_inicio: string;
-  horario_fim: string;
+  status: 'planejamento' | 'em_andamento' | 'concluido' | 'cancelado';
   vagas_totais: number;
   vagas_ocupadas?: number;
-  ativa: boolean;
+  orcamento?: number;
   local?: string;
 }
 
-const Oficinas = () => {
+export default function Projetos() {
   const { isAdmin } = useAuth();
   const { toast } = useToast();
-  const [oficinas, setOficinas] = useState<Oficina[]>([]);
+  const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [selectedOficina, setSelectedOficina] = useState<Oficina | null>(null);
-  const [filtroStatus, setFiltroStatus] = useState<string>('todas');
+  const [selectedProjeto, setSelectedProjeto] = useState<Projeto | null>(null);
+  const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [searchTerm, setSearchTerm] = useState('');
 
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
-    instrutor: '',
+    coordenador: '',
     data_inicio: '',
     data_fim: '',
-    horario_inicio: '',
-    horario_fim: '',
+    status: 'planejamento',
     local: '',
     vagas_totais: 10,
-    ativa: true
+    orcamento: 0
   });
 
-  const loadOficinas = async () => {
+  const loadProjetos = async () => {
     try {
       setLoading(true);
-      const response = await api.getOficinas();
-      const oficinasData = Array.isArray(response.data) ? response.data : 
+      const response = await api.getProjetos();
+      const projetosData = Array.isArray(response.data) ? response.data : 
                           Array.isArray(response) ? response : [];
-      setOficinas(oficinasData);
+      setProjetos(projetosData);
     } catch (error) {
-      console.error('Erro ao carregar oficinas:', error);
+      console.error('Erro ao carregar projetos:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar as oficinas.",
+        description: "Não foi possível carregar os projetos.",
         variant: "destructive",
       });
-      setOficinas([]); // Garantir que sempre será um array
+      setProjetos([]); // Garantir que sempre será um array
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadOficinas();
+    loadProjetos();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      if (selectedOficina) {
-        await api.updateOficina(selectedOficina.id, formData);
-        toast({ title: "Sucesso", description: "Oficina atualizada com sucesso!" });
+      if (selectedProjeto) {
+        await api.updateProjeto(selectedProjeto.id, formData);
+        toast({ title: "Sucesso", description: "Projeto atualizado com sucesso!" });
       } else {
-        await api.createOficina(formData);
-        toast({ title: "Sucesso", description: "Oficina criada com sucesso!" });
+        await api.createProjeto(formData);
+        toast({ title: "Sucesso", description: "Projeto criado com sucesso!" });
       }
       
       setShowForm(false);
-      setSelectedOficina(null);
+      setSelectedProjeto(null);
       resetForm();
-      loadOficinas();
+      loadProjetos();
     } catch (error) {
-      console.error('Erro ao salvar oficina:', error);
+      console.error('Erro ao salvar projeto:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar a oficina.",
+        description: "Não foi possível salvar o projeto.",
         variant: "destructive",
       });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta oficina?')) return;
+    if (!confirm('Tem certeza que deseja excluir este projeto?')) return;
     
     try {
-      await api.deleteOficina(id);
-      toast({ title: "Sucesso", description: "Oficina excluída com sucesso!" });
-      loadOficinas();
+      await api.deleteProjeto(id);
+      toast({ title: "Sucesso", description: "Projeto excluído com sucesso!" });
+      loadProjetos();
     } catch (error) {
-      console.error('Erro ao excluir oficina:', error);
+      console.error('Erro ao excluir projeto:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível excluir a oficina.",
+        description: "Não foi possível excluir o projeto.",
         variant: "destructive",
       });
     }
@@ -121,47 +119,43 @@ const Oficinas = () => {
     setFormData({
       nome: '',
       descricao: '',
-      instrutor: '',
+      coordenador: '',
       data_inicio: '',
       data_fim: '',
-      horario_inicio: '',
-      horario_fim: '',
+      status: 'planejamento',
       local: '',
       vagas_totais: 10,
-      ativa: true
+      orcamento: 0
     });
   };
 
-  const openEditForm = (oficina: Oficina) => {
-    setSelectedOficina(oficina);
+  const openEditForm = (projeto: Projeto) => {
+    setSelectedProjeto(projeto);
     setFormData({
-      nome: oficina.nome,
-      descricao: oficina.descricao,
-      instrutor: oficina.instrutor,
-      data_inicio: oficina.data_inicio,
-      data_fim: oficina.data_fim || '',
-      horario_inicio: oficina.horario_inicio,
-      horario_fim: oficina.horario_fim,
-      local: oficina.local || '',
-      vagas_totais: oficina.vagas_totais,
-      ativa: oficina.ativa
+      nome: projeto.nome,
+      descricao: projeto.descricao,
+      coordenador: projeto.coordenador,
+      data_inicio: projeto.data_inicio,
+      data_fim: projeto.data_fim || '',
+      status: projeto.status,
+      local: projeto.local || '',
+      vagas_totais: projeto.vagas_totais,
+      orcamento: projeto.orcamento || 0
     });
     setShowForm(true);
   };
 
   const openCreateForm = () => {
-    setSelectedOficina(null);
+    setSelectedProjeto(null);
     resetForm();
     setShowForm(true);
   };
 
-  const filteredOficinas = Array.isArray(oficinas) ? oficinas.filter(oficina => {
-    const matchesSearch = oficina.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         oficina.instrutor?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProjetos = Array.isArray(projetos) ? projetos.filter(projeto => {
+    const matchesSearch = projeto.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       projeto.coordenador?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = filtroStatus === 'todas' || 
-                         (filtroStatus === 'ativas' && oficina.ativa) ||
-                         (filtroStatus === 'inativas' && !oficina.ativa);
+    const matchesStatus = filtroStatus === 'todos' || projeto.status === filtroStatus;
     
     return matchesSearch && matchesStatus;
   }) : [];
@@ -169,7 +163,7 @@ const Oficinas = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-lg">Carregando oficinas...</div>
+        <div className="text-lg">Carregando projetos...</div>
       </div>
     );
   }
@@ -177,11 +171,11 @@ const Oficinas = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Oficinas</h1>
+        <h1 className="text-3xl font-bold">Projetos</h1>
         {isAdmin && (
           <Button onClick={openCreateForm}>
             <Plus className="w-4 h-4 mr-2" />
-            Nova Oficina
+            Novo Projeto
           </Button>
         )}
       </div>
@@ -190,7 +184,7 @@ const Oficinas = () => {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <Input
-            placeholder="Buscar por nome ou instrutor..."
+            placeholder="Buscar por nome ou coordenador..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -200,59 +194,67 @@ const Oficinas = () => {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todas">Todas</SelectItem>
-            <SelectItem value="ativas">Ativas</SelectItem>
-            <SelectItem value="inativas">Inativas</SelectItem>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="planejamento">Planejamento</SelectItem>
+            <SelectItem value="em_andamento">Em Andamento</SelectItem>
+            <SelectItem value="concluido">Concluído</SelectItem>
+            <SelectItem value="cancelado">Cancelado</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Lista de Oficinas */}
+      {/* Lista de Projetos */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredOficinas.map((oficina) => (
-          <Card key={oficina.id} className="h-full">
+        {filteredProjetos.map((projeto) => (
+          <Card key={projeto.id} className="h-full">
             <CardHeader>
               <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{oficina.nome}</CardTitle>
-                <Badge variant={oficina.ativa ? "default" : "secondary"}>
-                  {oficina.ativa ? "Ativa" : "Inativa"}
+                <CardTitle className="text-lg">{projeto.nome}</CardTitle>
+                <Badge variant={
+                  projeto.status === 'em_andamento' ? "default" :
+                  projeto.status === 'concluido' ? "success" :
+                  projeto.status === 'cancelado' ? "destructive" :
+                  "secondary"
+                }>
+                  {projeto.status.replace('_', ' ')}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600">{oficina.descricao}</p>
+              <p className="text-sm text-gray-600">{projeto.descricao}</p>
               
               <div className="space-y-2">
                 <div className="flex items-center text-sm">
                   <Users className="w-4 h-4 mr-2" />
-                  <span>Instrutor: {oficina.instrutor}</span>
+                  <span>Coordenador: {projeto.coordenador}</span>
                 </div>
                 
                 <div className="flex items-center text-sm">
                   <Calendar className="w-4 h-4 mr-2" />
                   <span>
-                    {new Date(oficina.data_inicio).toLocaleDateString()}
-                    {oficina.data_fim && ` - ${new Date(oficina.data_fim).toLocaleDateString()}`}
+                    {new Date(projeto.data_inicio).toLocaleDateString()}
+                    {projeto.data_fim && ` - ${new Date(projeto.data_fim).toLocaleDateString()}`}
                   </span>
                 </div>
-                
-                <div className="flex items-center text-sm">
-                  <Clock className="w-4 h-4 mr-2" />
-                  <span>{oficina.horario_inicio} - {oficina.horario_fim}</span>
-                </div>
 
-                {oficina.local && (
+                {projeto.local && (
                   <div className="flex items-center text-sm">
-                    <span>📍 {oficina.local}</span>
+                    <span>📍 {projeto.local}</span>
                   </div>
                 )}
                 
                 <div className="flex items-center justify-between text-sm">
-                  <span>Vagas: {oficina.vagas_ocupadas || 0}/{oficina.vagas_totais}</span>
+                  <span>Vagas: {projeto.vagas_ocupadas || 0}/{projeto.vagas_totais}</span>
                   <Badge variant="outline">
-                    {Math.round(((oficina.vagas_ocupadas || 0) / oficina.vagas_totais) * 100)}% ocupado
+                    {Math.round(((projeto.vagas_ocupadas || 0) / projeto.vagas_totais) * 100)}% ocupado
                   </Badge>
                 </div>
+
+                {projeto.orcamento && (
+                  <div className="flex items-center text-sm">
+                    <span>💰 Orçamento: R$ {projeto.orcamento.toLocaleString('pt-BR')}</span>
+                  </div>
+                )}
               </div>
 
               {isAdmin && (
@@ -260,14 +262,14 @@ const Oficinas = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => openEditForm(oficina)}
+                    onClick={() => openEditForm(projeto)}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDelete(oficina.id)}
+                    onClick={() => handleDelete(projeto.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -278,9 +280,9 @@ const Oficinas = () => {
         ))}
       </div>
 
-      {filteredOficinas.length === 0 && (
+      {filteredProjetos.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-gray-500">Nenhuma oficina encontrada.</p>
+          <p className="text-gray-500">Nenhum projeto encontrado.</p>
         </div>
       )}
 
@@ -289,13 +291,13 @@ const Oficinas = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedOficina ? 'Editar Oficina' : 'Nova Oficina'}
+              {selectedProjeto ? 'Editar Projeto' : 'Novo Projeto'}
             </DialogTitle>
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="col-span-2">
                 <Label htmlFor="nome">Nome *</Label>
                 <Input
                   id="nome"
@@ -304,29 +306,44 @@ const Oficinas = () => {
                   required
                 />
               </div>
-              
+
+              <div className="col-span-2">
+                <Label htmlFor="descricao">Descrição</Label>
+                <Textarea
+                  id="descricao"
+                  value={formData.descricao}
+                  onChange={(e) => setFormData({...formData, descricao: e.target.value})}
+                />
+              </div>
+
               <div>
-                <Label htmlFor="instrutor">Instrutor *</Label>
+                <Label htmlFor="coordenador">Coordenador *</Label>
                 <Input
-                  id="instrutor"
-                  value={formData.instrutor}
-                  onChange={(e) => setFormData({...formData, instrutor: e.target.value})}
+                  id="coordenador"
+                  value={formData.coordenador}
+                  onChange={(e) => setFormData({...formData, coordenador: e.target.value})}
                   required
                 />
               </div>
-            </div>
 
-            <div>
-              <Label htmlFor="descricao">Descrição</Label>
-              <Textarea
-                id="descricao"
-                value={formData.descricao}
-                onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                rows={3}
-              />
-            </div>
+              <div>
+                <Label htmlFor="status">Status *</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value) => setFormData({...formData, status: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planejamento">Planejamento</SelectItem>
+                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                    <SelectItem value="concluido">Concluído</SelectItem>
+                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="data_inicio">Data de Início *</Label>
                 <Input
@@ -337,9 +354,9 @@ const Oficinas = () => {
                   required
                 />
               </div>
-              
+
               <div>
-                <Label htmlFor="data_fim">Data de Fim</Label>
+                <Label htmlFor="data_fim">Data de Término</Label>
                 <Input
                   id="data_fim"
                   type="date"
@@ -347,42 +364,7 @@ const Oficinas = () => {
                   onChange={(e) => setFormData({...formData, data_fim: e.target.value})}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="horario_inicio">Horário de Início *</Label>
-                <Input
-                  id="horario_inicio"
-                  type="time"
-                  value={formData.horario_inicio}
-                  onChange={(e) => setFormData({...formData, horario_inicio: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="horario_fim">Horário de Fim *</Label>
-                <Input
-                  id="horario_fim"
-                  type="time"
-                  value={formData.horario_fim}
-                  onChange={(e) => setFormData({...formData, horario_fim: e.target.value})}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="local">Local</Label>
-                <Input
-                  id="local"
-                  value={formData.local}
-                  onChange={(e) => setFormData({...formData, local: e.target.value})}
-                />
-              </div>
-              
               <div>
                 <Label htmlFor="vagas_totais">Vagas Totais *</Label>
                 <Input
@@ -394,24 +376,35 @@ const Oficinas = () => {
                   required
                 />
               </div>
+
+              <div>
+                <Label htmlFor="orcamento">Orçamento (R$)</Label>
+                <Input
+                  id="orcamento"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.orcamento}
+                  onChange={(e) => setFormData({...formData, orcamento: parseFloat(e.target.value)})}
+                />
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="local">Local</Label>
+                <Input
+                  id="local"
+                  value={formData.local}
+                  onChange={(e) => setFormData({...formData, local: e.target.value})}
+                />
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="ativa"
-                checked={formData.ativa}
-                onChange={(e) => setFormData({...formData, ativa: e.target.checked})}
-              />
-              <Label htmlFor="ativa">Oficina ativa</Label>
-            </div>
-
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-4">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                 Cancelar
               </Button>
               <Button type="submit">
-                {selectedOficina ? 'Atualizar' : 'Criar'}
+                {selectedProjeto ? 'Salvar Alterações' : 'Criar Projeto'}
               </Button>
             </div>
           </form>
@@ -420,5 +413,3 @@ const Oficinas = () => {
     </div>
   );
 };
-
-export default Oficinas;

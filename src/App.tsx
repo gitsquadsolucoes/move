@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import RecuperarSenha from "./pages/RecuperarSenha";
 import Beneficiarias from "./pages/Beneficiarias";
 import CadastroBeneficiaria from "./pages/CadastroBeneficiaria";
 import NotFound from "./pages/NotFound";
@@ -19,19 +20,24 @@ import Configuracoes from "./pages/ConfiguracoesNew";
 import EditarPerfil from "./components/EditarPerfil";
 import Mensagens from "./pages/Mensagens";
 import Atividades from "./pages/Atividades";
+import Feed from "./pages/Feed";
+import Projetos from "./pages/Projetos";
+import Relatorios from "./pages/Relatorios";
+import FormularioWrapper from "./pages/Formulario";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <PostgreSQLAuthProvider>
-        <BrowserRouter>
-          <Routes>
+    <PostgreSQLAuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/recuperar-senha" element={<RecuperarSenha />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <MainLayout>
@@ -102,12 +108,40 @@ const App = () => (
                 </MainLayout>
               </ProtectedRoute>
             } />
+            <Route path="/feed" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Feed />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/projetos" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Projetos />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/relatorios" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Relatorios />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios/:tipo" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <FormularioWrapper />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-        </PostgreSQLAuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </PostgreSQLAuthProvider>
   </ErrorBoundary>
 );
 
