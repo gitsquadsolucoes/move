@@ -25,7 +25,8 @@ import {
   Edit,
   Trash2,
   FileText,
-  Download
+  Download,
+  UserCheck
 } from 'lucide-react';
 import {
   DropdownMenu,

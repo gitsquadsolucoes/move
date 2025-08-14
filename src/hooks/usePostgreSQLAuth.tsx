@@ -61,8 +61,8 @@ export const PostgreSQLAuthProvider: React.FC<AuthProviderProps> = ({ children }
     const load = async () => {
       try {
         const response = await api.auth.getProfile();
-        if (response.user) {
-          const user = response.user as any;
+        if (response.success && response.data) {
+          const user = response.data as any;
           setUser(user);
 
           const mockProfile: Profile = {

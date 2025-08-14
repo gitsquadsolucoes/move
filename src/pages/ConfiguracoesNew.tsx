@@ -308,13 +308,13 @@ export default function Configuracoes() {
       let titulo = '';
       
       switch (exportConfig.dados) {
-        case 'usuarios':
+        case 'formularios':
           dados = mockUsers.map(user => ({
             nome: user.nome_completo,
             email: user.email,
             cargo: user.cargo || 'Não informado',
             departamento: user.departamento || 'Não informado',
-            nivelAcesso: user.nivel_acesso,
+            tipoUsuario: user.tipo_usuario,
             status: user.ativo ? 'Ativo' : 'Inativo'
           }));
           titulo = 'Relatório de Usuários';
